@@ -153,7 +153,7 @@
 //               Institute Contact
 //             </Typography>
 //             <Typography variant="caption" display="block" color="text.secondary">
-//               Email: support@jjinstitute.com
+//               Email: support@example.com
 //             </Typography>
 //             <Typography variant="caption" display="block" color="text.secondary">
 //               Phone: +91 98765 43210
@@ -347,7 +347,7 @@
 //               Institute Contact
 //             </Typography>
 //             <Typography variant="caption" display="block" color="text.secondary">
-//               Email: support@jjinstitute.com
+//               Email: support@example.com
 //             </Typography>
 //             <Typography variant="caption" display="block" color="text.secondary">
 //               Phone: +91 98765 43210
@@ -887,7 +887,7 @@ const StudentDashboard: React.FC = () => {
 
               <Stack spacing={1}>
                 {[
-                  { label: 'support@jjinstitute.com', href: 'mailto:support@jjinstitute.com', color: 'primary.main' },
+                  { label: 'support@example.com', href: 'mailto:support@example.com', color: 'primary.main' },
                   { label: '+91 98765 43210', href: 'tel:+919876543210', color: 'text.primary' },
                 ].map(item => (
                   <Box

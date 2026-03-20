@@ -4,4 +4,4 @@ Allow: /login
 Disallow: /admin
 Disallow: /student
 
-Sitemap: https://jjinstitute.in/sitemap.xml
+Sitemap: https://example.in/sitemap.xml

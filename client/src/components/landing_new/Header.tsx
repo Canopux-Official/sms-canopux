@@ -6,7 +6,7 @@ import {
 } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import CloseIcon from '@mui/icons-material/Close'
-import LogoImg from '../../assets/logo.jpeg'
+import LogoImg from '../../assets/image.png'
 import { useNavigate } from 'react-router-dom'
 
 
@@ -64,7 +64,7 @@ export default function Header() {
               border: '1.5px solid rgba(10,37,64,0.1)',
               boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
             }}>
-              <Box component="img" src={LogoImg} alt="JJ Institute Logo"
+              <Box component="img" src={LogoImg} alt="example coaching Logo"
                 sx={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </Box>
             <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
@@ -72,7 +72,7 @@ export default function Header() {
                 fontFamily: '"DM Sans", sans-serif', fontWeight: 700,
                 fontSize: 15, color: '#0a2540', lineHeight: 1.2, letterSpacing: '-0.02em',
               }}>
-                JJ Institute Of Science
+                Example Coaching Center
               </Typography>
               <Typography sx={{ fontSize: 10.5, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: '"DM Sans", sans-serif' }}>
                 Coaching Centre
@@ -140,7 +140,7 @@ export default function Header() {
                 <Box component="img" src={LogoImg} alt="Logo" sx={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </Box>
               <Typography sx={{ fontFamily: '"DM Sans", sans-serif', fontWeight: 700, fontSize: 13, color: '#0a2540' }}>
-                JJ Institute
+                example coaching
               </Typography>
             </Box>
             <IconButton onClick={() => setMobileOpen(false)} sx={{ color: '#374151' }}>

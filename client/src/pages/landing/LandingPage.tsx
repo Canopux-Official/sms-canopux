@@ -72,9 +72,9 @@ const LandingPage = () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <SEO
-        title="JJ Institute Of Science: In The Pursuit Of Excellence"
-        description="Join JJ Institute of Science for a premier educational experience. Explore our courses, faculty, and success stories to achieve academic excellence in JEE, NEET, and Boards."
-        keywords="JJ Institute of Science, JIS, Education, Courses, Faculty, Academic Excellence, JEE, NEET, Boards, Science"
+        title="Example Coaching Center: In The Pursuit Of Excellence"
+        description="Join Example Coaching Center for a premier educational experience. Explore our courses, faculty, and success stories to achieve academic excellence in JEE, NEET, and Boards."
+        keywords="Example Coaching Center, JIS, Education, Courses, Faculty, Academic Excellence, JEE, NEET, Boards, Science"
       />
       {/* Inject premium fonts */}
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;0,800;1,400;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');`}</style>

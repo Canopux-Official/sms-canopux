@@ -93,7 +93,7 @@
 //           >
 //             <img
 //               src={LogoImg}
-//               alt="JJ Institute"
+//               alt="example coaching"
 //               style={{
 //                 height: '32px',
 //                 width: '32px',
@@ -111,7 +111,7 @@
 //               color: 'white',
 //             }}
 //           >
-//             JJ INSTITUTE <br />
+//             example coaching <br />
 //             <span style={{
 //               fontSize: '0.75rem',
 //               fontWeight: 500,
@@ -222,7 +222,7 @@ import LanguageIcon from '@mui/icons-material/Language';
 
 import { getAdminProfile } from '../../api/apiFunctions';
 import { LogoContainer, drawerPaperStyles } from './AdminSidebar.styles';
-import LogoImg from '../../assets/logo.jpeg';
+import LogoImg from '../../assets/image.png';
 
 interface AdminSidebarProps {
   mobileOpen: boolean;
@@ -292,10 +292,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ mobileOpen, handleDrawerTog
             height: 44,
             flexShrink: 0,
           }}>
-            <img src={LogoImg} alt="JJ Institute" style={{ height: 30, width: 30, objectFit: 'contain' }} />
+            <img src={LogoImg} alt="example" style={{ height: 30, width: 30, objectFit: 'contain' }} />
           </Box>
           <Typography variant="subtitle1" fontWeight={800} lineHeight={1.2} sx={{ color: 'white', whiteSpace: 'nowrap' }}>
-            JJ INSTITUTE <br />
+            example <br />
             <span style={{ fontSize: '0.72rem', fontWeight: 500, color: '#b4acacff', letterSpacing: '0.5px' }}>
               OF SCIENCE
             </span>

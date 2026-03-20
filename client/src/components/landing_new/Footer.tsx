@@ -11,7 +11,7 @@ import InstagramIcon from '@mui/icons-material/Instagram'
 import LinkedInIcon from '@mui/icons-material/LinkedIn'
 import TwitterIcon from '@mui/icons-material/Twitter'
 // import LogoImg from '../../assets/logo.jpeg';
-import LogoCircular from '/logo/JIS Logo Circular.png'
+import LogoCircular from '../../assets/image.png'
 
 interface FooterData {
   brandDescription?: string;
@@ -61,13 +61,13 @@ export default function Footer({ data }: FooterProps) {
   const d = {
     brandDescription: data?.brandDescription || 'Transforming academic aspirations into achievements through excellence and dedication.',
     ctaHeading: data?.ctaHeading || 'Ready to Transform Your Future?',
-    ctaSubtext: data?.ctaSubtext || 'Join thousands of successful students who have achieved their dreams with JJ Institute Of Science.',
+    ctaSubtext: data?.ctaSubtext || 'Join thousands of successful students who have achieved their dreams with Example Coaching Center.',
     ctaButtonPrimary: data?.ctaButtonPrimary || 'Enroll Now',
     ctaButtonSecondary: data?.ctaButtonSecondary || 'Schedule a Demo',
     phones: (data?.phones && data.phones.length > 0) ? data.phones : ['+91 9876 543 210', '+91 8765 432 109'],
     email: data?.email || 'contact@elite.com',
     address: data?.address || '123 Ave, City — 110001',
-    copyrightText: data?.copyrightText || '© 2025 JJ Institute Of Science. All rights reserved.',
+    copyrightText: data?.copyrightText || '© 2025 Example Coaching Center. All rights reserved.',
     socialLinks: {
       facebook: data?.socialLinks?.facebook || '#',
       instagram: data?.socialLinks?.instagram || '#',
@@ -246,13 +246,13 @@ export default function Footer({ data }: FooterProps) {
                   <Box
                     component="img"
                     src={LogoCircular}
-                    alt="JJ Institute Logo"
+                    alt="example coaching Logo"
                     sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
                   />
                 </Box>
                 <Box>
                   <Typography sx={{ fontFamily: 'Montserrat', fontWeight: 800, fontSize: { xs: 13, md: 15 }, color: '#fff', lineHeight: 1.5 }}>
-                    JJ Institute Of Science
+                    Example Coaching Center
                   </Typography>
                   <Typography sx={{ fontSize: 10, color: 'rgba(216,237,224,0.55)', letterSpacing: 1.2, textTransform: 'uppercase' }}>
                     Coaching Centre

@@ -20,7 +20,7 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import JIS from '../../assets/logo/JIS Logo.png';
+import JIS from '../../assets/image.png';
 
 // Import functions from your API file
 import { getLoggedInUser, verifyOtp, resendOtp, validateToken } from '../../api/apiFunctions';
@@ -291,8 +291,8 @@ const LoginPage = () => {
   return (
     <Box sx={loginStyles.container}>
       <SEO 
-        title="Student & Admin Portal | JJ Institute of Science" 
-        description="Login to the JJ Institute of Science portal to access your courses, dashboard, and educational resources."
+        title="Student & Admin Portal | Example Coaching Center" 
+        description="Login to the Example Coaching Center portal to access your courses, dashboard, and educational resources."
       />
       {/* LEFT SECTION */}
       <Box sx={loginStyles.leftSection}>
@@ -311,7 +311,7 @@ const LoginPage = () => {
               <Box
                 component="img"
                 src={JIS}
-                alt="JJ Institute Logo"
+                alt="example coaching Logo"
                 sx={{
                   height: { xs: '100px', md: '140px' },
                   width: { xs: '100px', md: '140px' },
@@ -321,7 +321,7 @@ const LoginPage = () => {
             </Box>
 
             <Typography variant="h1" sx={loginStyles.welcomeText}>
-              JJ Institute Of Science
+              Example Coaching Center
             </Typography>
 
             <Typography variant="h6" sx={loginStyles.subText}>
@@ -336,7 +336,7 @@ const LoginPage = () => {
       <Box sx={loginStyles.rightSection}>
         <Box sx={loginStyles.formBox}>
           <Typography variant="h4" sx={loginStyles.brandLogo} onClick={() => navigate('/')}>
-            JJ Institute Of Science
+            Example Coaching Center
           </Typography>
 
           {/* Dynamic Title based on Admin State */}

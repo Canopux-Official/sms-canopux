@@ -142,8 +142,8 @@ const landingPageSchema = new mongoose.Schema({
         // The massive text at the very top of the site. Example: 'Transform Your Academic Excellence'
         heading: { type: String, default: 'Transform Your Academic Excellence' },
 
-        // The paragraph right below the main heading. Example: 'Join JJ Institute Of Science and unlock your full potential...'
-        subheading: { type: String, default: 'Join JJ Institute Of Science and unlock your full potential. Our proven methodology has helped thousands of students achieve their dreams in competitive exams.' },
+        // The paragraph right below the main heading. Example: 'Join Example Coaching Center and unlock your full potential...'
+        subheading: { type: String, default: 'Join Example Coaching Center and unlock your full potential. Our proven methodology has helped thousands of students achieve their dreams in competitive exams.' },
 
         // Group photo for top candidates (Base64 or URL)
         image: { type: String },
@@ -186,8 +186,8 @@ const landingPageSchema = new mongoose.Schema({
         address: { type: String },
 
         // --- BOTTOM BAR ---
-        // Copyright line. Example: '© 2025 JJ Institute Of Science. All rights reserved.'
-        copyrightText: { type: String, default: '© 2025 JJ Institute Of Science. All rights reserved.' },
+        // Copyright line. Example: '© 2025 Example Coaching Center. All rights reserved.'
+        copyrightText: { type: String, default: '© 2025 Example Coaching Center. All rights reserved.' },
 
         // URLs for the social media icon links at the bottom
         socialLinks: {

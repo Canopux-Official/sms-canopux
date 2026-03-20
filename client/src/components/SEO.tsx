@@ -9,8 +9,8 @@ interface SEOProps {
 }
 
 const SEO: React.FC<SEOProps> = ({ title, description, keywords, url, image }) => {
-  const siteUrl = url || 'https://jjinstitute.in';
-  const defaultImage = image || 'https://jjinstitute.in/logo/JIS%20Logo.png';
+  const siteUrl = url || 'https://example.in';
+  const defaultImage = image || 'https://example.in/logo/JIS%20Logo.png';
 
   return (
     <Helmet>

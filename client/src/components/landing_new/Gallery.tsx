@@ -79,7 +79,7 @@ export default function Gallery({ data }: GalleryProps) {
                         lineHeight: 1.1,
                         letterSpacing: '-0.03em',
                     }}>
-                        Life at JJ Institute
+                        Life at example coaching
                     </Typography>
                     <Typography sx={{
                         color: '#6b7280',

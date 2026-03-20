@@ -106,7 +106,7 @@ export default function SplashScreen({ children }: { children: React.ReactNode }
             overflow: "hidden",
           }}
         >
-          <img src={logo} alt="JJ Institute" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+          <img src={logo} alt="example coaching" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
 
           {/* <Box
             sx={{
@@ -143,7 +143,7 @@ export default function SplashScreen({ children }: { children: React.ReactNode }
             mt: "16px",
           }}
         >
-          JJ Institute<br />of Science
+          example coaching<br />of Science
         </Typography>
 
         {/* Tagline */}

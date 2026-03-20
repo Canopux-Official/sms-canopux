@@ -69,7 +69,7 @@ const StudentLayout: React.FC = () => {
       <LogoSection>
         <Avatar src={LogoImg} sx={{ bgcolor: 'white', p: 0.5, width: 40, height: 40 }} />
         <Box>
-          <Typography variant="subtitle1" fontWeight={800} color="white">JJ INSTITUTE</Typography>
+          <Typography variant="subtitle1" fontWeight={800} color="white">example coaching</Typography>
           <Typography variant="caption" color="#b4acac">Student Portal</Typography>
         </Box>
       </LogoSection>

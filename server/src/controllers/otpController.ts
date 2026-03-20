@@ -8,27 +8,27 @@ const COOLDOWN_MS = 90 * 1000; // 90 seconds
 const MAX_ATTEMPTS = 5;
 
 
-// const transporter = nodemailer.createTransport({
-//   service: "gmail",
-//   auth: {
-//     user: process.env.MAIL_USER,
-//     pass: process.env.MAIL_PASS,
-//   },
-// });
-
-// DON'T DELETE THIS BELOW COMMENTED PART
-
 const transporter = nodemailer.createTransport({
-  host: process.env.MAIL_HOST,
-  port: Number(process.env.MAIL_PORT), // 465
-  secure: true, // true for port 465, false for 587
+  service: "gmail",
   auth: {
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,
   },
-  connectionTimeout: 20000,
-  greetingTimeout: 20000,
 });
+
+// DON'T DELETE THIS BELOW COMMENTED PART
+
+// const transporter = nodemailer.createTransport({
+//   host: process.env.MAIL_HOST,
+//   port: Number(process.env.MAIL_PORT), // 465
+//   secure: true, // true for port 465, false for 587
+//   auth: {
+//     user: process.env.MAIL_USER,
+//     pass: process.env.MAIL_PASS,
+//   },
+//   connectionTimeout: 20000,
+//   greetingTimeout: 20000,
+// });
 
 authenticator.options = { digits: 6, step: 300 };
 
@@ -43,7 +43,7 @@ const getEmailTemplate = (otp: string, isResend: boolean, currentAttempts: numbe
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
       <div style="background-color: #2E7D32; padding: 30px 20px; text-align: center;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600; letter-spacing: 1px;">JJ Institute of Science</h1>
+        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600; letter-spacing: 1px;">Example Coaching Center</h1>
         <p style="color: #E8F5E9; margin: 5px 0 0; font-size: 14px;">Excellence in JEE, NEET & Boards</p>
       </div>
 
@@ -72,7 +72,7 @@ const getEmailTemplate = (otp: string, isResend: boolean, currentAttempts: numbe
 
       <div style="background-color: #f5f5f5; padding: 15px; text-align: center; border-top: 1px solid #eeeeee;">
         <p style="color: #888888; font-size: 12px; margin: 0;">
-          &copy; ${new Date().getFullYear()} JJ Institute of Science. All rights reserved.
+          &copy; ${new Date().getFullYear()} Example Coaching Center. All rights reserved.
         </p>
       </div>
     </div>
@@ -122,7 +122,7 @@ export const sendOtp = async (
     });
 
     await transporter.sendMail({
-      from: `"JJ Institute Auth" <${process.env.MAIL_USER}>`,
+      from: `"example coaching Auth" <${process.env.MAIL_USER}>`,
       to: email,
       subject: "Your Login Verification Code",
       html: getEmailTemplate(otp, false, 0), // 0 attempts used initially
@@ -217,7 +217,7 @@ export const resendOtp = async (email: string) => {
     await existingOtp.save();
 
     await transporter.sendMail({
-      from: `"JJ Institute Auth" <${process.env.MAIL_USER}>`,
+      from: `"example coaching Auth" <${process.env.MAIL_USER}>`,
       to: email,
       subject: "Your New Verification Code",
       html: getEmailTemplate(otp, true, existingOtp.attempts), // Pass current attempts

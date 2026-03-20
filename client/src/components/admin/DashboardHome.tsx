@@ -90,7 +90,7 @@ const DashboardHome: React.FC = () => {
           Overview
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Welcome back to the JJ Institute Of Science Admin Panel.
+          Welcome back to the Example Coaching Center Admin Panel.
         </Typography>
       </Box>
 

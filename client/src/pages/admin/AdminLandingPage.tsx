@@ -273,7 +273,7 @@ const AdminLandingPage: React.FC = () => {
                             phones: [],
                             email: '',
                             address: '',
-                            copyrightText: '© 2025 JJ Institute Of Science. All rights reserved.',
+                            copyrightText: '© 2025 Example Coaching Center. All rights reserved.',
                             socialLinks: { facebook: '', instagram: '', linkedin: '', twitter: '' }
                         }
                     });
@@ -1554,7 +1554,7 @@ const AdminLandingPage: React.FC = () => {
                                                 fullWidth
                                                 multiline
                                                 rows={3}
-                                                helperText='Shown at the bottom of the footer. e.g. "© 2025 JJ Institute..."'
+                                                helperText='Shown at the bottom of the footer. e.g. "© 2025 example coaching..."'
                                                 value={landingData?.footer?.copyrightText || ''}
                                                 onChange={(e) => handleNestedChange('footer.copyrightText', e.target.value)}
                                             />

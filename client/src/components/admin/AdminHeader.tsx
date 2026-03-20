@@ -220,7 +220,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ handleDrawerToggle }) => {
                 Admin User
               </Typography>
               <Typography variant="caption" color="text.secondary" noWrap>
-                JJ Institute Of Science
+                Example Coaching Center
               </Typography>
             </Box>
 

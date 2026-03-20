@@ -80,7 +80,7 @@ export default function Hero({ data }: { data?: { heading?: React.ReactNode; sub
       <Box component="em" sx={{ color: '#c47a3a', display: 'block' }}> Potential</Box>
     </>
   )
-  const heroSubheading = data?.subheading || 'Join JJ Institute Of Science and unlock your full potential. Our proven methodology has helped thousands of students achieve their dreams in competitive exams.'
+  const heroSubheading = data?.subheading || 'Join Example Coaching Center and unlock your full potential. Our proven methodology has helped thousands of students achieve their dreams in competitive exams.'
   const displayStats = data?.stats && data.stats.length > 0 ? data.stats : stats
 
   useEffect(() => {
@@ -133,7 +133,7 @@ export default function Hero({ data }: { data?: { heading?: React.ReactNode; sub
             <Box sx={{ opacity: 0, animation: 'fadeUp 0.6s ease forwards', animationDelay: '0ms', mb: 3 }}>
               <Chip
                 icon={<VerifiedIcon sx={{ fontSize: '14px !important', color: '#0a2540 !important' }} />}
-                label="Trusted by Students & Parents in Koraput"
+                label="Trusted by Students & Parents in Delhi"
                 size="small"
                 sx={{
                   bgcolor: 'rgba(10,37,64,0.06)', color: '#0a2540',
@@ -205,7 +205,7 @@ export default function Hero({ data }: { data?: { heading?: React.ReactNode; sub
               aspectRatio: '1', position: 'relative',
               boxShadow: '0 32px 80px rgba(10,37,64,0.12), 0 8px 20px rgba(0,0,0,0.06)',
             }}>
-              <Box component="img" src={data?.image || img} alt="JJ Institute"
+              <Box component="img" src={data?.image || img} alt="example coaching"
                 sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
               {/* Overlay gradient */}
               <Box sx={{
