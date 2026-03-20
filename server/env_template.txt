@@ -1,0 +1,9 @@
+CLIENT_LINK=http://localhost:5173
+SERVER_LINK=http://localhost:2424
+MONGO_URI=
+PORT=2424
+JWT_SECRET=
+ADMIN_PHONE=
+OTP_SECRET=
+MAIL_USER= email id 
+MAIL_PASS= mail pass generated in google account settings
