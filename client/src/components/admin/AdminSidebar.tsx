@@ -297,7 +297,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ mobileOpen, handleDrawerTog
           <Typography variant="subtitle1" fontWeight={800} lineHeight={1.2} sx={{ color: 'white', whiteSpace: 'nowrap' }}>
             example <br />
             <span style={{ fontSize: '0.72rem', fontWeight: 500, color: '#b4acacff', letterSpacing: '0.5px' }}>
-              OF SCIENCE
+              Coaching
             </span>
           </Typography>
         </Box>

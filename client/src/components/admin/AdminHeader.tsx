@@ -234,7 +234,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ handleDrawerToggle }) => {
                 flexShrink: 0,
               }}
             >
-              JJ
+              EC
             </Avatar>
           </ProfileSection>
         </Box>
