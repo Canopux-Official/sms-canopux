@@ -20,7 +20,7 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import JIS from '../../assets/image.png';
+import JIS from '../../assets/sms-logo.png';
 
 // Import functions from your API file
 import { getLoggedInUser, verifyOtp, resendOtp, validateToken } from '../../api/apiFunctions';
@@ -191,7 +191,7 @@ const LoginPage = () => {
       if (email && !authToken) {
         localStorage.setItem('authEmail', email); // Use email for OTP later
         if (responseData.enrollmentNumber) {
-            localStorage.setItem('authEnrollmentNumber', responseData.enrollmentNumber);
+          localStorage.setItem('authEnrollmentNumber', responseData.enrollmentNumber);
         }
         const atIndex = email.indexOf("@");
         const visibleStart = email.substring(0, 2);
@@ -290,8 +290,8 @@ const LoginPage = () => {
 
   return (
     <Box sx={loginStyles.container}>
-      <SEO 
-        title="Student & Admin Portal | Example Coaching Center" 
+      <SEO
+        title="Student & Admin Portal | Example Coaching Center"
         description="Login to the Example Coaching Center portal to access your courses, dashboard, and educational resources."
       />
       {/* LEFT SECTION */}

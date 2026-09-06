@@ -222,7 +222,7 @@ import LanguageIcon from '@mui/icons-material/Language';
 
 import { getAdminProfile } from '../../api/apiFunctions';
 import { LogoContainer, drawerPaperStyles } from './AdminSidebar.styles';
-import LogoImg from '../../assets/image.png';
+import LogoImg from '../../assets/sms-logo.png';
 
 interface AdminSidebarProps {
   mobileOpen: boolean;
@@ -252,16 +252,16 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ mobileOpen, handleDrawerTog
   }, []);
 
   const allMenuItems = [
-    { text: 'Dashboard',            icon: <DashboardIcon />,      path: '/admin',              permissionKey: null },
-    { text: 'Students Directory',   icon: <PeopleIcon />,         path: '/admin/students',     permissionKey: 'students' },
-    { text: 'Streams Manager',      icon: <SchoolIcon />,         path: '/admin/streams',      permissionKey: 'streams' },
-    { text: 'Target Exams Manager', icon: <QuizIcon />,           path: '/admin/target-exams', permissionKey: 'targetExams' },
-    { text: 'Subjects Manager',     icon: <LibraryBooksIcon />,   path: '/admin/subjects',     permissionKey: 'subjects' },
-    { text: 'Session Manager',      icon: <SettingsSuggestIcon />,path: '/admin/session',      permissionKey: 'session' },
-    { text: 'Upload Material',      icon: <UploadFileIcon />,     path: '/admin/upload',       permissionKey: 'upload' },
-    { text: 'Add Notice',           icon: <PushPinIcon />,        path: '/admin/notice',       permissionKey: 'notice' },
-    { text: 'Attendance',           icon: <EditCalendarIcon />,   path: '/admin/attendance',   permissionKey: 'attendance' },
-    { text: 'Landing Page Content', icon: <LanguageIcon />,       path: '/admin/landing-page', permissionKey: 'landingPage' },
+    { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin', permissionKey: null },
+    { text: 'Students Directory', icon: <PeopleIcon />, path: '/admin/students', permissionKey: 'students' },
+    { text: 'Streams Manager', icon: <SchoolIcon />, path: '/admin/streams', permissionKey: 'streams' },
+    { text: 'Target Exams Manager', icon: <QuizIcon />, path: '/admin/target-exams', permissionKey: 'targetExams' },
+    { text: 'Subjects Manager', icon: <LibraryBooksIcon />, path: '/admin/subjects', permissionKey: 'subjects' },
+    { text: 'Session Manager', icon: <SettingsSuggestIcon />, path: '/admin/session', permissionKey: 'session' },
+    { text: 'Upload Material', icon: <UploadFileIcon />, path: '/admin/upload', permissionKey: 'upload' },
+    { text: 'Add Notice', icon: <PushPinIcon />, path: '/admin/notice', permissionKey: 'notice' },
+    { text: 'Attendance', icon: <EditCalendarIcon />, path: '/admin/attendance', permissionKey: 'attendance' },
+    { text: 'Landing Page Content', icon: <LanguageIcon />, path: '/admin/landing-page', permissionKey: 'landingPage' },
   ];
 
   if (role === 'superadmin') {

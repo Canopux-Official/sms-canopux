@@ -2,7 +2,7 @@ import { Box, Container, Typography, Button, Chip } from '@mui/material'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import VerifiedIcon from '@mui/icons-material/Verified'
 import { useEffect, useRef, useState } from 'react'
-import img from '../../assets/results/image.png'
+import img from '../../assets/results/sms-logo.png'
 
 const stats = [
   { target: 10000, suffix: 'K+', divisor: 1000, label: 'Students Trained' },

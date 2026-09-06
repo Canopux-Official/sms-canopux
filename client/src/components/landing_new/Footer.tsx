@@ -11,7 +11,7 @@ import InstagramIcon from '@mui/icons-material/Instagram'
 import LinkedInIcon from '@mui/icons-material/LinkedIn'
 import TwitterIcon from '@mui/icons-material/Twitter'
 // import LogoImg from '../../assets/logo.jpeg';
-import LogoCircular from '../../assets/image.png'
+import LogoCircular from '../../assets/sms-logo.png'
 
 interface FooterData {
   brandDescription?: string;
@@ -154,7 +154,7 @@ export default function Footer({ data }: FooterProps) {
               </IconButton>
             </DialogTitle>
             <DialogContent sx={{ bgcolor: '#fff', px: 3, py: 5 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5,py: 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, py: 2 }}>
 
                 {/* Phones */}
                 {d.phones.length > 0 && (
@@ -181,7 +181,7 @@ export default function Footer({ data }: FooterProps) {
 
                 {/* Email */}
                 {d.email && (
-                  <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start'}}>
+                  <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
                     <Box sx={{
                       width: 38, height: 38, borderRadius: '10px',
                       bgcolor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
@@ -202,7 +202,7 @@ export default function Footer({ data }: FooterProps) {
 
                 {/* Address */}
                 {d.address && (
-                  <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start'}}>
+                  <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
                     <Box sx={{
                       width: 38, height: 38, borderRadius: '10px',
                       bgcolor: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
