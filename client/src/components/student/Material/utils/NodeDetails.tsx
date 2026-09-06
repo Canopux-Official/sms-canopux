@@ -99,7 +99,7 @@ const ModalContent: React.FC<NodeDetailModalProps & { isMobile: boolean }> = ({
         : null;
 
     const dueDate = node.lastDate
-        ? new Date(node.createdAt).toLocaleDateString("en-US", {
+        ? new Date(node.lastDate).toLocaleDateString("en-US", {
             month: "long",
             day: "2-digit",
             year: "numeric",
