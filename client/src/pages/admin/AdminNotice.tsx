@@ -206,7 +206,7 @@ const AdminNoticePage = () => {
   const uniqueClassTypes = ['9', '10', '11', '12', 'Dropper 1', 'Dropper 2'];
 
   return (
-    <Box sx={{ bgcolor: '#fafbfc', minHeight: '100vh' }}>
+    <Box sx={{ minHeight: '100vh' }}>
       <Container maxWidth="xl" sx={{ py: 3 }}>
         {/* Header */}
         <Box sx={{ mb: 3 }}>

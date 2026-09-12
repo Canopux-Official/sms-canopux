@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { Node } from '../types/node';
 import {
-  confirmFolderDeletion,
   createFolder,
   deleteSubFolder,
   getChildrenByParentId,
@@ -137,24 +136,7 @@ export const useNodeOperations = (
     try {
       const result = await deleteSubFolder(deletingNodeId);
 
-      if (result.requiresDriveDeletion && result.driveFileIds) {
-        showSnackbar('Deleting files from Google Drive...', 'info');
-
-        const confirmData = await confirmFolderDeletion(result.folderId || '');
-
-        if (confirmData.success) {
-          const updatedNodes = removeNodeAndChildren(deletingNodeId);
-          setLocalNodes(updatedNodes);
-          onNodesUpdate?.(updatedNodes);
-
-          showSnackbar(
-            `Deleted SuccessFully`,
-            'success'
-          );
-        } else {
-          showSnackbar(confirmData.message || 'Failed to complete folder deletion', 'error');
-        }
-      } else if (result.success) {
+      if (result.success) {
         const updatedNodes = removeNodeAndChildren(deletingNodeId);
         setLocalNodes(updatedNodes);
         onNodesUpdate?.(updatedNodes);
