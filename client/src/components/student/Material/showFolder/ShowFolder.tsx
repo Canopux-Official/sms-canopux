@@ -1169,7 +1169,6 @@ const StudentFolderStructure: React.FC = () => {
     <Box
       sx={{
         minHeight: "100vh",
-        backgroundColor: "#fafafa",
         pb: 6,
       }}
     >
