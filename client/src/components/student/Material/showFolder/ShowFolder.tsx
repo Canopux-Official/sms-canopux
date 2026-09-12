@@ -1270,10 +1270,10 @@ const StudentFolderStructure: React.FC = () => {
             elevation={0}
             sx={{
               p: { xs: 1.5, md: 2 },
-              backgroundColor: "#ffffff",
-              borderRadius: "12px",
-              border: "1px solid #e0e0e0",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+              // backgroundColor: "#ffffff",
+              // borderRadius: "12px",
+              // border: "1px solid #e0e0e0",
+              // boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
             }}
           >
             <Breadcrumbs
