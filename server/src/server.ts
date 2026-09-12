@@ -124,16 +124,157 @@
 // export default app;
 
 
+// import dotenv from 'dotenv';
+// dotenv.config();
+
+// import express, { Request, Response, NextFunction } from 'express';
+// import cors from 'cors';
+// import compression from 'compression';
+// import helmet from 'helmet';
+// import rateLimit from 'express-rate-limit';
+// import connectDB from './config/db';
+
+// // --- Route imports ---
+// import authRoutes from './routes/auth/auth';
+// import adminStudentRoutes from './routes/admin/admin.student';
+// import adminStreamRoutes from './routes/admin/admin.stream';
+// import adminTargetExamRoutes from './routes/admin/admin.targetExam';
+// import adminSubjectRoutes from './routes/admin/admin.subject';
+// import materialRoutes from './routes/admin/admin.materialRoutes';
+// import studentMaterialRoutes from './routes/student/studentMaterialRoutes';
+// import studentProfileRoutes from './routes/student/studentProfileRoutes';
+// import adminNoticeRoutes from './routes/admin/admin.noticeRoutes';
+// import studentNoticeRoutes from './routes/student/studentNoticeRoutes';
+// import adminDashboardRoutes from './routes/admin/admin.dashboardRoutes';
+// import adminAttendanceRoutes from './routes/admin/admin.attendanceRoutes';
+// import adminControlRoutes from './routes/admin/admin.controlRoutes';
+// import studentAttendanceRoutes from './routes/student/student.attendanceRoutes';
+// import cronRoutes from './routes/cronRoutes';
+// import adminLandingPageRoutes from './routes/admin/admin.landingPageRoutes';
+// import landingPageController from './controllers/landingPageController';
+
+// // -----------------------------------------------------------------------
+// // App setup
+// // -----------------------------------------------------------------------
+// const app = express();
+
+// app.set('trust proxy', 1); // Required for rate-limiter behind Vercel's proxy
+
+// app.use(helmet());
+// app.use(compression());
+
+// // CORS — tighten origin to your actual frontend URL
+// app.use(
+//   cors({
+//     origin: process.env.CLIENT_LINK,
+//     credentials: true,
+//     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+//   })
+// );
+
+// app.use(express.json({ limit: '1mb' }));
+// app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// // Rate limiter
+// app.use(
+//   rateLimit({
+//     windowMs: 15 * 60 * 1000,
+//     max: 500,
+//     standardHeaders: true,
+//     legacyHeaders: false,
+//     message: { success: false, error: 'Too many requests. Please try again later.' },
+//   })
+// );
+
+// // -----------------------------------------------------------------------
+// // DB middleware — runs before EVERY route.
+// // connectDB() is idempotent: it returns the cached connection if healthy.
+// // This is the correct pattern for Vercel serverless.
+// // -----------------------------------------------------------------------
+// app.use(async (_req: Request, res: Response, next: NextFunction) => {
+//   try {
+//     await connectDB();
+//     next();
+//   } catch (err) {
+//     console.error('[App] DB unavailable:', err);
+//     res.status(503).json({
+//       success: false,
+//       message: 'Database temporarily unavailable. Please retry in a moment.',
+//     });
+//   }
+// });
+
+// // -----------------------------------------------------------------------
+// // Routes
+// // -----------------------------------------------------------------------
+// app.get('/landingPage', (req: Request, res: Response) => {
+//   landingPageController.getLandingPage(req, res);
+// });
+
+// app.use('/auth', authRoutes);
+
+// // Admin
+// app.use('/admin/dashboard', adminDashboardRoutes);
+// app.use('/admin/studentControl', adminStudentRoutes);
+// app.use('/admin/streamControl', adminStreamRoutes);
+// app.use('/admin/targetExamControl', adminTargetExamRoutes);
+// app.use('/admin/subjectControl', adminSubjectRoutes);
+// app.use('/admin/material', materialRoutes);
+// app.use('/admin/notice', adminNoticeRoutes);
+// app.use('/admin/attendance', adminAttendanceRoutes);
+// app.use('/admin/control', adminControlRoutes);
+// app.use('/admin/landingPage', adminLandingPageRoutes);
+
+// // Student
+// app.use('/student/studentProfile', studentProfileRoutes);
+// app.use('/student/material', studentMaterialRoutes);
+// app.use('/student/notice', studentNoticeRoutes);
+// app.use('/student/attendance', studentAttendanceRoutes);
+
+// // Cron
+// app.use('/api/cron', cronRoutes);
+
+// // -----------------------------------------------------------------------
+// // Global error handler
+// // -----------------------------------------------------------------------
+// app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+//   console.error('[App] Unhandled error:', err.message);
+//   res.status(500).json({ success: false, message: 'Internal server error.' });
+// });
+
+// // -----------------------------------------------------------------------
+// // Local dev only — Vercel runs the exported app directly, not via listen()
+// // -----------------------------------------------------------------------
+// if (process.env.NODE_ENV !== 'production' && process.env.VERCEL !== '1') {
+//   const PORT = process.env.PORT || 3000;
+//   connectDB()
+//     .then(() => {
+//       app.listen(PORT, () => console.log(`[App] Server running on port ${PORT}`));
+//     })
+//     .catch((err) => {
+//       console.error('[App] Failed to start server:', err);
+//       process.exit(1);
+//     });
+// }
+
+// export default app;
+
+
+
+
+
+
+
 import dotenv from 'dotenv';
 dotenv.config();
-
+ 
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import compression from 'compression';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import connectDB from './config/db';
-
+ 
 // --- Route imports ---
 import authRoutes from './routes/auth/auth';
 import adminStudentRoutes from './routes/admin/admin.student';
@@ -152,17 +293,20 @@ import studentAttendanceRoutes from './routes/student/student.attendanceRoutes';
 import cronRoutes from './routes/cronRoutes';
 import adminLandingPageRoutes from './routes/admin/admin.landingPageRoutes';
 import landingPageController from './controllers/landingPageController';
-
+import adminFeeStructureRoutes from './routes/admin/admin.feeStructureRoutes';
+import adminFeeRoutes from './routes/admin/admin.feeRoutes';
+import studentFeeRoutes from './routes/student/studentFeeRoutes';
+ 
 // -----------------------------------------------------------------------
 // App setup
 // -----------------------------------------------------------------------
 const app = express();
-
+ 
 app.set('trust proxy', 1); // Required for rate-limiter behind Vercel's proxy
-
+ 
 app.use(helmet());
 app.use(compression());
-
+ 
 // CORS — tighten origin to your actual frontend URL
 app.use(
   cors({
@@ -171,10 +315,10 @@ app.use(
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   })
 );
-
+ 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
-
+ 
 // Rate limiter
 app.use(
   rateLimit({
@@ -185,7 +329,7 @@ app.use(
     message: { success: false, error: 'Too many requests. Please try again later.' },
   })
 );
-
+ 
 // -----------------------------------------------------------------------
 // DB middleware — runs before EVERY route.
 // connectDB() is idempotent: it returns the cached connection if healthy.
@@ -203,16 +347,16 @@ app.use(async (_req: Request, res: Response, next: NextFunction) => {
     });
   }
 });
-
+ 
 // -----------------------------------------------------------------------
 // Routes
 // -----------------------------------------------------------------------
 app.get('/landingPage', (req: Request, res: Response) => {
   landingPageController.getLandingPage(req, res);
 });
-
+ 
 app.use('/auth', authRoutes);
-
+ 
 // Admin
 app.use('/admin/dashboard', adminDashboardRoutes);
 app.use('/admin/studentControl', adminStudentRoutes);
@@ -224,16 +368,19 @@ app.use('/admin/notice', adminNoticeRoutes);
 app.use('/admin/attendance', adminAttendanceRoutes);
 app.use('/admin/control', adminControlRoutes);
 app.use('/admin/landingPage', adminLandingPageRoutes);
-
+app.use('/admin/feeStructure', adminFeeStructureRoutes);
+app.use('/admin/fee', adminFeeRoutes);
+ 
 // Student
 app.use('/student/studentProfile', studentProfileRoutes);
 app.use('/student/material', studentMaterialRoutes);
 app.use('/student/notice', studentNoticeRoutes);
 app.use('/student/attendance', studentAttendanceRoutes);
-
+app.use('/student/fee', studentFeeRoutes);
+ 
 // Cron
 app.use('/api/cron', cronRoutes);
-
+ 
 // -----------------------------------------------------------------------
 // Global error handler
 // -----------------------------------------------------------------------
@@ -241,7 +388,7 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('[App] Unhandled error:', err.message);
   res.status(500).json({ success: false, message: 'Internal server error.' });
 });
-
+ 
 // -----------------------------------------------------------------------
 // Local dev only — Vercel runs the exported app directly, not via listen()
 // -----------------------------------------------------------------------
@@ -256,5 +403,5 @@ if (process.env.NODE_ENV !== 'production' && process.env.VERCEL !== '1') {
       process.exit(1);
     });
 }
-
+ 
 export default app;
