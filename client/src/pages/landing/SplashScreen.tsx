@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import logo from  '/logo/JIS Logo Circular.png';
+import logo from '/sms-logo.png';
 
 export default function SplashScreen({ children }: { children: React.ReactNode }) {
   const [visible, setVisible] = useState(true);
