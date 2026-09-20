@@ -50,6 +50,8 @@ const AdminMarks: React.FC = () => {
   const [editingTest, setEditingTest] = useState<Test | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [classFilter, setClassFilter] = useState('All');
+  const [streamFilter, setStreamFilter] = useState('All'); // 'All' | 'none' | stream _id
+  const [examFilter, setExamFilter] = useState('All'); // 'All' | target exam _id
   const [statusFilter, setStatusFilter] = useState('All');
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
@@ -76,10 +78,28 @@ const AdminMarks: React.FC = () => {
         t.heading.toLowerCase().includes(searchTerm.toLowerCase()) ||
         t.targetExam?.name?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesClass = classFilter === 'All' || t.classType === classFilter;
+      const matchesStream =
+        streamFilter === 'All' || (streamFilter === 'none' ? !t.stream : t.stream?._id === streamFilter);
+      const matchesExam = examFilter === 'All' || t.targetExam?._id === examFilter;
       const matchesStatus = statusFilter === 'All' || t.status === statusFilter;
-      return matchesSearch && matchesClass && matchesStatus;
+      return matchesSearch && matchesClass && matchesStream && matchesExam && matchesStatus;
     });
-  }, [tests, searchTerm, classFilter, statusFilter]);
+  }, [tests, searchTerm, classFilter, streamFilter, examFilter, statusFilter]);
+
+  const hasActiveFilters =
+    searchTerm.trim() !== '' ||
+    classFilter !== 'All' ||
+    streamFilter !== 'All' ||
+    examFilter !== 'All' ||
+    statusFilter !== 'All';
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setClassFilter('All');
+    setStreamFilter('All');
+    setExamFilter('All');
+    setStatusFilter('All');
+  };
 
   const showSnackbar = (message: string, severity: 'success' | 'error') =>
     setSnackbar({ open: true, message, severity });
@@ -215,6 +235,29 @@ const AdminMarks: React.FC = () => {
           </Select>
         </FormControl>
         <FormControl size="small" sx={{ minWidth: 160 }}>
+          <InputLabel>Stream</InputLabel>
+          <Select value={streamFilter} label="Stream" onChange={(e) => setStreamFilter(e.target.value)}>
+            <MenuItem value="All">All Streams</MenuItem>
+            <MenuItem value="none">No Stream</MenuItem>
+            {streams.map((s) => (
+              <MenuItem key={s._id} value={s._id}>
+                {s.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 180 }}>
+          <InputLabel>Target Exam</InputLabel>
+          <Select value={examFilter} label="Target Exam" onChange={(e) => setExamFilter(e.target.value)}>
+            <MenuItem value="All">All Target Exams</MenuItem>
+            {targetExams.map((exam) => (
+              <MenuItem key={exam._id} value={exam._id}>
+                {exam.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 160 }}>
           <InputLabel>Status</InputLabel>
           <Select value={statusFilter} label="Status" onChange={(e) => setStatusFilter(e.target.value)}>
             <MenuItem value="All">All Statuses</MenuItem>
@@ -223,6 +266,11 @@ const AdminMarks: React.FC = () => {
             <MenuItem value="published">Published</MenuItem>
           </Select>
         </FormControl>
+        {hasActiveFilters && (
+          <Button size="small" onClick={handleClearFilters}>
+            Clear filters
+          </Button>
+        )}
       </Box>
 
       {testsLoading ? (
@@ -231,7 +279,11 @@ const AdminMarks: React.FC = () => {
         </Box>
       ) : filteredTests.length === 0 ? (
         <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 2 }}>
-          <Typography color="text.secondary">No tests found. Create your first test to get started.</Typography>
+          <Typography color="text.secondary">
+            {tests.length > 0
+              ? 'No tests match the selected filters.'
+              : 'No tests found. Create your first test to get started.'}
+          </Typography>
         </Paper>
       ) : (
         <TableContainer component={Paper} variant="outlined">

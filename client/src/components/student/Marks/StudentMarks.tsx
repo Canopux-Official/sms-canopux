@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Container,
   Box,
@@ -6,6 +6,7 @@ import {
   Paper,
   CircularProgress,
   Alert,
+  Button,
   Chip,
   Stack,
   LinearProgress,
@@ -13,12 +14,86 @@ import {
 } from '@mui/material';
 import EventIcon from '@mui/icons-material/Event';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import { getStudentMarks, type StudentMarkRow } from './services/StudentMarksApi';
+import { getStudent, getLandingPage } from '../../../api/apiFunctions';
+import ReportCardDialog from './ReportCardDialog';
+import { DEFAULT_INSTITUTE, type ReportInstitute, type ReportStudent } from './utils/reportCardRenderer';
+
+// Rejects if the promise takes too long, so a slow request can never block the "View Report" button.
+const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> =>
+  Promise.race([
+    promise,
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Request timed out')), ms)),
+  ]);
+
+type InstituteContact = Pick<ReportInstitute, 'address' | 'phones' | 'email'>;
 
 const StudentMarks: React.FC = () => {
   const [marks, setMarks] = useState<StudentMarkRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Report card: extra details (student profile + institute contact) and dialog state
+  const [student, setStudent] = useState<ReportStudent | null>(null);
+  const [contact, setContact] = useState<InstituteContact | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(true);
+  const [reportMark, setReportMark] = useState<StudentMarkRow | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+
+  const institute = useMemo<ReportInstitute>(() => ({ ...DEFAULT_INSTITUTE, ...(contact || {}) }), [contact]);
+
+  useEffect(() => {
+    let active = true;
+
+    const fetchReportDetails = async () => {
+      const [studentRes, landingRes] = await Promise.allSettled([
+        withTimeout(getStudent(), 12000),
+        withTimeout(getLandingPage(), 12000),
+      ]);
+      if (!active) return;
+
+      if (studentRes.status === 'fulfilled') {
+        const raw = studentRes.value;
+        if (raw.success && 'data' in raw && raw.data) {
+          const d = raw.data as ReportStudent;
+          // Only keep what the report card needs (the profile response also contains account fields).
+          setStudent({
+            name: d.name,
+            enrollmentNumber: d.enrollmentNumber,
+            dob: d.dob,
+            currentClass: d.currentClass,
+            academicSession: d.academicSession,
+            profilePhoto: d.profilePhoto,
+            stream: d.stream ?? null,
+            targetExams: d.targetExams,
+          });
+        }
+      }
+
+      if (landingRes.status === 'fulfilled' && landingRes.value.success) {
+        const payload = landingRes.value.data as
+          | { data?: { footer?: { address?: string; phones?: string[]; email?: string } } }
+          | undefined;
+        const footer = payload?.data?.footer;
+        if (footer) {
+          setContact({ address: footer.address, phones: footer.phones, email: footer.email });
+        }
+      }
+
+      setDetailsLoading(false);
+    };
+    fetchReportDetails();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleViewReport = (m: StudentMarkRow) => {
+    setReportMark(m);
+    setReportOpen(true);
+  };
 
   useEffect(() => {
     const fetchMarks = async () => {
@@ -186,10 +261,30 @@ const StudentMarks: React.FC = () => {
                   </Stack>
                 </>
               )}
+
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<DescriptionOutlinedIcon />}
+                  onClick={() => handleViewReport(m)}
+                  disabled={detailsLoading}
+                >
+                  View Report
+                </Button>
+              </Box>
             </Paper>
           ))}
         </Stack>
       )}
+
+      <ReportCardDialog
+        open={reportOpen}
+        mark={reportMark}
+        student={student}
+        institute={institute}
+        onClose={() => setReportOpen(false)}
+      />
     </Container>
   );
 };
