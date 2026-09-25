@@ -1,0 +1,8 @@
+{
+    "name": "sms-canopux",
+    "private": true,
+    "workspaces": [
+        "project-sms/*",
+        "server"
+    ]
+}
