@@ -2,6 +2,8 @@ import axios from 'axios';
 import type { GetAllFilesResponse } from "../types/FileDetail";
 import type { DeleteFolderResponse } from "../types/FolderDetails";
 import type { Node } from "../types/node";
+import { getAuthHeaders } from '../../../../utils/authHeader';
+
 
 interface ApiResponse {
   success: boolean;
@@ -11,13 +13,8 @@ interface ApiResponse {
 
 const host = import.meta.env.VITE_SERVER_LINK || '';
 
-function getAuthHeaders() {
-  const token = window.localStorage.getItem("authToken");
-  return {
-    Authorization: token ? `Bearer ${token}` : '',
-    'Content-Type': 'application/json'
-  };
-}
+
+
 
 export const createOrFetchClass = async (className: string, targetExam: string, stream: string): Promise<ApiResponse> => {
   try {

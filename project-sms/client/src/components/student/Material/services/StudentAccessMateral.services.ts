@@ -1,20 +1,14 @@
 import axios from "axios";
 import { handleApiError } from "./ErrorApi";
 import type { Node } from "../../../admin/Material/types/node";
-
+import { getAuthHeaders as getSharedAuthHeaders } from '../../../../utils/authHeader';
 const API = axios.create({
   baseURL: import.meta.env.VITE_SERVER_LINK || "http://localhost:3000",
 });
 
 
 function getAuthHeaders() {
-  const token = window.localStorage.getItem("authToken");
-  return {
-    headers: {
-      Authorization: token ? `Bearer ${token}` : "",
-      "Content-Type": "application/json",
-    },
-  };
+  return { headers: getSharedAuthHeaders() };
 }
 
 export interface ApiResponse<T> {

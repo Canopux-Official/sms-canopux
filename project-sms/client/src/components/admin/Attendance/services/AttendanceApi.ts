@@ -1,13 +1,7 @@
+
+import { getAuthHeaders } from "../../../../utils/authHeader";
 import type { AttendanceResponse, AttendanceUpdate, Student, SyncResponse } from "../types";
 
-
-function getAuthHeaders() {
-    const token = window.localStorage.getItem("authToken");
-    return {
-        Authorization: token ? `Bearer ${token}` : '',
-        'Content-Type': 'application/json'
-    };
-}
 
 
 // Demo data generator
@@ -31,7 +25,7 @@ const generateDemoData = (
 
   for (let i = 1; i <= studentCount; i++) {
     const days: { [key: string]: boolean | null } = {};
-    
+
     // Generate random attendance
     for (let day = 1; day <= lastDayToShow; day++) {
       const random = Math.random();
@@ -58,8 +52,8 @@ const generateDemoData = (
         ? streamId === 'science'
           ? 'Science'
           : streamId === 'commerce'
-          ? 'Commerce'
-          : 'Arts'
+            ? 'Commerce'
+            : 'Arts'
         : null,
       streamId: ['11', '12', 'dropper-1', 'dropper-2'].includes(currentClass)
         ? streamId || null
@@ -130,7 +124,7 @@ const generateDemoData = (
   };
 };
 
-const host = import.meta.env.VITE_SERVER_LINK || ''; 
+const host = import.meta.env.VITE_SERVER_LINK || '';
 
 // API Service
 class AttendanceApiService {
@@ -158,7 +152,7 @@ class AttendanceApiService {
       ...(year && { year: year.toString() }),
     });
 
-    const response = await fetch(`${this.baseUrl}/view?${params}`,{
+    const response = await fetch(`${this.baseUrl}/view?${params}`, {
       headers: getAuthHeaders()
     });
     if (!response.ok) {
@@ -171,7 +165,7 @@ class AttendanceApiService {
     if (this.useDemoData) {
       // Simulate network delay
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      
+
       // Demo response
       return {
         success: true,

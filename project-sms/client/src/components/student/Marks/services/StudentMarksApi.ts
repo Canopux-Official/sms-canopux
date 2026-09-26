@@ -1,14 +1,9 @@
 import axios from 'axios';
+import { getAuthHeaders } from '../../../../utils/authHeader';
+
 
 const host = import.meta.env.VITE_SERVER_LINK || '';
 
-function getAuthHeaders() {
-  const token = window.localStorage.getItem('authToken');
-  return {
-    Authorization: token ? `Bearer ${token}` : '',
-    'Content-Type': 'application/json'
-  };
-}
 
 export interface StudentMarkRow {
   testId: string;

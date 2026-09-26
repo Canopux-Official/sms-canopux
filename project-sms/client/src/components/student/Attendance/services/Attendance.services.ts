@@ -1,17 +1,12 @@
 // services/attendanceService.ts
 
+
+import { getAuthHeaders } from "../../../../utils/authHeader";
 import type { ApiResponse } from "../types";
 
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_LINK || 'http://localhost:5173';
 
-function getAuthHeaders() {
-    const token = window.localStorage.getItem("authToken");
-    return {
-        Authorization: token ? `Bearer ${token}` : '',
-        'Content-Type': 'application/json'
-    };
-}
 
 export const attendanceService = {
     /**

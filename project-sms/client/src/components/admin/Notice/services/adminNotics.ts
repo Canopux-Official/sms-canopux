@@ -1,5 +1,7 @@
 import axios from 'axios';
 import type { NoticeFormData } from '../types/types';
+import { getOrgSlug } from '../../../../utils/tenant';
+import { getAuthHeaders } from '../../../../utils/authHeader';
 
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_LINK || 'http://localhost:5000/api';
@@ -13,10 +15,9 @@ const apiClient = axios.create({
 
 // Add auth token to requests
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  const headers = getAuthHeaders();
+  config.headers.Authorization = headers.Authorization;
+  config.headers['X-Org-Slug'] = headers['X-Org-Slug'];
   return config;
 });
 

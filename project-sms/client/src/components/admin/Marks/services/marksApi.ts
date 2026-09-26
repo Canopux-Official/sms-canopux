@@ -1,15 +1,10 @@
 import axios from 'axios';
 import type { Test, TestFormData, EligibleStudent, MarksEntryResponse } from '../types/types';
+import { getAuthHeaders } from '../../../../utils/authHeader';
 
 const host = import.meta.env.VITE_SERVER_LINK || '';
 
-function getAuthHeaders() {
-  const token = window.localStorage.getItem('authToken');
-  return {
-    Authorization: token ? `Bearer ${token}` : '',
-    'Content-Type': 'application/json'
-  };
-}
+
 
 interface ApiResponse<T = unknown> {
   success: boolean;

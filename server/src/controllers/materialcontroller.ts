@@ -598,7 +598,7 @@ const getAllFiles = async (req: AuthRequest, res: Response) => {
 };
 
 // Endpoint to manually trigger cleanup (can be called by cron job)
-const triggerCleanup = async (req: Request, res: Response) => {
+const triggerCleanup = async (req: AuthRequest, res: Response) => {
     try {
         await cleanupInactiveMaterials();
         return res.status(200).json({

@@ -1,15 +1,10 @@
 // Updated services/StudentNotice.ts
+
+import { getAuthHeaders } from "../../../../utils/authHeader";
 import type { Notice } from "../../../admin/Notice/types/types"
 
 const host = import.meta.env.VITE_SERVER_LINK || '';
 
-function getAuthHeaders() {
-  const token = window.localStorage.getItem("authToken");
-  return {
-    Authorization: token ? `Bearer ${token}` : '',
-    'Content-Type': 'application/json'
-  };
-}
 
 interface ApiResponse {
   success: boolean;
@@ -59,12 +54,12 @@ export const getNoticesForStudent = async (): Promise<Notice[]> => {
     if (error instanceof Error) {
       throw error;
     }
-    
+
     // Handle network errors
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Network error. Please check your internet connection.');
     }
-    
+
     // Fallback for unknown errors
     throw new Error('An unexpected error occurred while fetching notices.');
   }

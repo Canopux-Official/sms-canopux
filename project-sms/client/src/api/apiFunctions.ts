@@ -1,5 +1,8 @@
 import axios, { AxiosError, type AxiosRequestConfig } from 'axios';
 
+import { getAuthHeaders } from '../utils/authHeader';
+import { getOrgSlug } from '../utils/tenant';
+
 // --- Type Definitions ---
 
 interface LoginPayload {
@@ -41,21 +44,14 @@ interface ApiResponse<T = unknown> {
 
 // --- Helper Functions ---
 
-function getAuthHeaders() {
-  const token = window.localStorage.getItem("authToken");
-  return {
-    Authorization: token ? `Bearer ${token}` : '',
-    'Content-Type': 'application/json'
-  };
-}
-
 // --- API Functions ---
 
 export async function getAllStudentProfiles(): Promise<ApiResponse> {
   try {
     const config: AxiosRequestConfig = {
       method: "get",
-      url: `${import.meta.env.VITE_SERVER_LINK}/auth/getAllStudentProfiles`
+      url: `${import.meta.env.VITE_SERVER_LINK}/auth/getAllStudentProfiles`,
+      headers: { 'X-Org-Slug': getOrgSlug() }
     };
 
     const response = await axios(config);

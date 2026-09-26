@@ -1,6 +1,8 @@
 // services/RecentMaterialsService.ts
 
 import axios from 'axios';
+import { getOrgSlug } from '../../../../utils/tenant';
+import { getAuthHeaders } from '../../../../utils/authHeader';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_LINK || "http://localhost:3000";
 
@@ -40,20 +42,12 @@ export interface MaterialStats {
 }
 
 // Helper to get auth token from localStorage or cookies
-const getAuthToken = (): string | null => {
-  // Adjust this based on where you store your token
-  return localStorage.getItem('authToken');
-};
+
 
 // Helper to create axios config with auth headers
+// Helper to create axios config with auth headers
 const getAuthConfig = () => {
-  const token = getAuthToken();
-  return {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
-  };
+  return { headers: getAuthHeaders() };
 };
 
 export const fetchRecentMaterials = async (
