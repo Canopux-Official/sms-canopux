@@ -1,4 +1,5 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { AuthRequest } from '../middlewares/verifyAuth';
 import Material from '../models/Material';
 import Stream from '../models/Stream'; // Import Stream model
 import TargetExam from '../models/TargetExam'; // Import TargetExam model
@@ -101,7 +102,7 @@ const checkAndUpdateIsActive = async (materialId: string): Promise<boolean> => {
         if (!isActive && !material.inactiveSince) {
             material.inactiveSince = new Date();
         } else if (isActive) {
-            material.inactiveSince = undefined;
+            material.inactiveSince = undefined as unknown as Date;
         }
 
         await material.save();
@@ -168,8 +169,9 @@ const deleteDescendants = async (parentId: string): Promise<void> => {
 
 const isValidObjectId = (id: any) => mongoose.Types.ObjectId.isValid(id);
 
-const createClassId = async (req: Request, res: Response) => {
+const createClassId = async (req: AuthRequest, res: Response) => {
     try {
+        const organizationId = req.user?.organizationId;
         const { className, targetExam, stream } = req.body;
 
         const validStream = isValidObjectId(stream) ? stream : null;
@@ -177,7 +179,8 @@ const createClassId = async (req: Request, res: Response) => {
         const findExisting = await Material.findOne({
             classType: className,
             targetExam: targetExam,
-            stream: validStream
+            stream: validStream,
+            organizationId
         });
 
         if (findExisting) {
@@ -195,9 +198,9 @@ const createClassId = async (req: Request, res: Response) => {
             parentId: null,
             heading: `Class ${className}`,
             path: [], // Root level has empty path
-            isActive: true // Default is true
+            isActive: true, // Default is true
+            organizationId
         });
-
         const savedClass = await newClass.save();
 
         // Check and update isActive status
@@ -217,10 +220,11 @@ const createClassId = async (req: Request, res: Response) => {
     }
 }
 
-const createSubFolder = async (req: Request, res: Response) => {
+const createSubFolder = async (req: AuthRequest, res: Response) => {
     try {
+        const organizationId = req.user?.organizationId;
         const parentId = req.params.id;
-        const parent = await Material.findById(parentId);
+        const parent = await Material.findOne({ _id: parentId, organizationId });
 
         if (!parent) {
             return res.status(404).json({
@@ -247,7 +251,7 @@ const createSubFolder = async (req: Request, res: Response) => {
         }
 
         // Build the full path
-        const fullPath = await buildPath(parentId);
+        const fullPath = await buildPath(parentId as any);
 
         const newSubMaterial = new Material({
             heading: heading || null,
@@ -264,7 +268,8 @@ const createSubFolder = async (req: Request, res: Response) => {
             type,
             fileId,
             path: fullPath,
-            isActive: true // Default is true
+            isActive: true, // Default is true
+            organizationId
         });
 
         const savedSubMaterial = await newSubMaterial.save();
@@ -293,8 +298,9 @@ const createSubFolder = async (req: Request, res: Response) => {
     }
 }
 
-const findByParentId = async (req: Request, res: Response) => {
+const findByParentId = async (req: AuthRequest, res: Response) => {
     try {
+        const organizationId = req.user?.organizationId;
         const parentId = req.params.id;
         if (!parentId) {
             return res.status(400).json({
@@ -304,7 +310,7 @@ const findByParentId = async (req: Request, res: Response) => {
         }
 
         // Find materials and populate subject
-        const materials = await Material.find({ parentId: parentId }).populate('subject', 'name');
+        const materials = await Material.find({ parentId: parentId, organizationId }).populate('subject', 'name');
 
         // Check and update isActive for each material
         for (const material of materials) {
@@ -314,7 +320,8 @@ const findByParentId = async (req: Request, res: Response) => {
         // Fetch updated materials and filter only active ones
         const updatedMaterials = await Material.find({
             parentId: parentId,
-            isActive: true
+            isActive: true,
+            organizationId
         }).populate('subject', 'name');
 
         return res.status(200).json({
@@ -328,8 +335,9 @@ const findByParentId = async (req: Request, res: Response) => {
     }
 }
 
-const deleteSubFolder = async (req: Request, res: Response) => {
+const deleteSubFolder = async (req: AuthRequest, res: Response) => {
     try {
+        const organizationId = req.user?.organizationId;
         const id = req.params.id;
         if (!id) {
             return res.status(400).json({
@@ -338,7 +346,7 @@ const deleteSubFolder = async (req: Request, res: Response) => {
             });
         }
 
-        const folder = await Material.findById(id);
+        const folder = await Material.findOne({ _id: id, organizationId });
         if (!folder) {
             return res.status(404).json({
                 message: 'Sub Folder not found',
@@ -372,8 +380,9 @@ const deleteSubFolder = async (req: Request, res: Response) => {
 };
 
 
-const updateSubFolder = async (req: Request, res: Response) => {
+const updateSubFolder = async (req: AuthRequest, res: Response) => {
     try {
+        const organizationId = req.user?.organizationId;
         const id = req.params.id;
 
         if (!id) {
@@ -383,7 +392,7 @@ const updateSubFolder = async (req: Request, res: Response) => {
             });
         }
 
-        const folder = await Material.findById(id).populate('subject', 'name');
+        const folder = await Material.findOne({ _id: id, organizationId }).populate('subject', 'name');
         if (!folder) {
             return res.status(404).json({
                 message: 'Sub Folder not found',
@@ -450,7 +459,7 @@ const updateSubFolder = async (req: Request, res: Response) => {
         // If heading changed, update all descendant paths
         const headingChanged = oldHeading !== newHeading;
         if (headingChanged) {
-            await updateDescendantPaths(id, newHeading);
+            await updateDescendantPaths(id as any, newHeading);
         }
 
         return res.status(200).json({
@@ -470,9 +479,10 @@ const updateSubFolder = async (req: Request, res: Response) => {
     }
 };
 
-const getAllClasses = async (req: Request, res: Response) => {
+const getAllClasses = async (req: AuthRequest, res: Response) => {
     try {
-        const classes = await Material.find({ parentId: null }).sort({ createdAt: -1 });
+        const organizationId = req.user?.organizationId;
+        const classes = await Material.find({ parentId: null, organizationId }).sort({ createdAt: -1 });
 
         // Check and update isActive for each class
         for (const classItem of classes) {
@@ -488,7 +498,8 @@ const getAllClasses = async (req: Request, res: Response) => {
         // Fetch updated classes and filter only active ones, with populated refs
         const activeClasses = await Material.find({
             parentId: null,
-            isActive: true
+            isActive: true,
+            organizationId
         })
             .populate('stream', 'name')
             .populate('targetExam', 'name')
@@ -505,13 +516,14 @@ const getAllClasses = async (req: Request, res: Response) => {
     }
 }
 
-const getAllFiles = async (req: Request, res: Response) => {
+const getAllFiles = async (req: AuthRequest, res: Response) => {
     try {
         const { search } = req.query;
 
         let query: any = {
             fileDetails: { $exists: true, $ne: [] },
-            isActive: true // Only fetch files from active materials
+            isActive: true, // Only fetch files from active materials
+            organizationId: req.user?.organizationId
         };
 
         if (search && typeof search === 'string') {

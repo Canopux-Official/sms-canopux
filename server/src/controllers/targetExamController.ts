@@ -1,31 +1,37 @@
-import { Request, Response } from "express";
+import { Response } from "express";
+import { AuthRequest } from "../middlewares/verifyAuth";
 import TargetExam from "../models/TargetExam";
 
-export const getAllExams = async (req: Request, res: Response) => {
+export const getAllExams = async (req: AuthRequest, res: Response) => {
     try {
-        const exams = await TargetExam.find({}).sort({ name: 1 });
+        const exams = await TargetExam.find({ organizationId: req.user?.organizationId }).sort({ name: 1 });
         return res.status(200).json(exams);
     } catch (error) {
         return res.status(500).json({ message: "Error fetching exams", error });
     }
 };
 
-export const addExam = async (req: Request, res: Response) => {
+export const addExam = async (req: AuthRequest, res: Response) => {
     try {
         const { name, isActive } = req.body;
         if (!name) return res.status(400).json({ message: "Name is required" });
 
-        const newExam = await TargetExam.create({ name, isActive });
+        const newExam = await TargetExam.create({ name, isActive, organizationId: req.user?.organizationId });
         return res.status(201).json(newExam);
     } catch (error) {
         return res.status(500).json({ message: "Error adding exam", error });
     }
 };
 
-export const updateExam = async (req: Request, res: Response) => {
+export const updateExam = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
-        const updatedExam = await TargetExam.findByIdAndUpdate(id, req.body, { new: true });
+        // const updatedExam = await TargetExam.findByIdAndUpdate(id, req.body, { new: true });
+        const updatedExam = await TargetExam.findOneAndUpdate(
+            { _id: id, organizationId: req.user?.organizationId },
+            req.body,
+            { new: true }
+        );
         if (!updatedExam) return res.status(404).json({ message: "Exam not found" });
         return res.status(200).json(updatedExam);
     } catch (error) {
@@ -33,27 +39,29 @@ export const updateExam = async (req: Request, res: Response) => {
     }
 };
 
-export const deleteExam = async (req: Request, res: Response) => {
+export const deleteExam = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
-        const deleted = await TargetExam.findByIdAndDelete(id);
+        // const deleted = await TargetExam.findByIdAndDelete(id);
+        const deleted = await TargetExam.findOneAndDelete({ _id: id, organizationId: req.user?.organizationId });
         if (!deleted) return res.status(404).json({ message: "Exam not found" });
         return res.status(200).json({ message: "Exam deleted successfully" });
     } catch (error) {
         return res.status(500).json({ message: "Error deleting exam", error });
     }
 };
-export const getAllActiveExams = async (req: Request, res: Response) => {
+export const getAllActiveExams = async (req: AuthRequest, res: Response) => {
     try {
-        const exams = await TargetExam.find({isActive: true}).sort({ name: 1 });
+        // const exams = await TargetExam.find({ isActive: true }).sort({ name: 1 });
+        const exams = await TargetExam.find({ isActive: true, organizationId: req.user?.organizationId }).sort({ name: 1 });
         return res.status(200).json(exams);
     } catch (error) {
         return res.status(500).json({ message: "Error fetching exams", error });
     }
 };
-export const getTargetExamCount = async () => {
+export const getTargetExamCount = async (organizationId: string) => {
     try {
-        const count = await TargetExam.countDocuments({});
+        const count = await TargetExam.countDocuments({ organizationId });
         return count;
     } catch (error) {
         return {
@@ -62,9 +70,9 @@ export const getTargetExamCount = async () => {
         };
     }
 };
-export const getActiveTargetExamCount = async () => {
+export const getActiveTargetExamCount = async (organizationId: string) => {
     try {
-        const count = await TargetExam.countDocuments({ isActive: true });
+        const count = await TargetExam.countDocuments({ isActive: true, organizationId });
         return count
     } catch (error) {
         return {

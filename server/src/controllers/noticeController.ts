@@ -1,14 +1,14 @@
 
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { AuthRequest } from '../middlewares/verifyAuth';
 import Notice from '../models/Notice';
 import Student from '../models/Student';
 
 // Create Notice (Admin)
-const createNotice = async (req: Request, res: Response): Promise<void> => {
+const createNotice = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { heading, description, imageLink, tag, classType, streams, targetExams, isForAll } = req.body;
 
-        // If isForAll is true, set classType, streams, targetExams to default values
         const noticeData = {
             heading,
             description,
@@ -17,7 +17,8 @@ const createNotice = async (req: Request, res: Response): Promise<void> => {
             classType: isForAll ? '' : classType || '',
             streams: isForAll ? [] : (Array.isArray(streams) ? streams.filter(s => s) : []),
             targetExams: isForAll ? [] : (Array.isArray(targetExams) ? targetExams.filter(e => e) : []),
-            isForAll
+            isForAll,
+            organizationId: req.user?.organizationId
         };
 
         const notice = await Notice.create(noticeData);
@@ -44,12 +45,12 @@ const createNotice = async (req: Request, res: Response): Promise<void> => {
 };
 
 // Edit Notice (Admin)
-const editNotice = async (req: Request, res: Response): Promise<void> => {
+const editNotice = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
         const { heading, description, imageLink, tag, classType, streams, targetExams, isForAll } = req.body;
 
-        const notice = await Notice.findById(id);
+        const notice = await Notice.findOne({ _id: id, organizationId: req.user?.organizationId });
 
         if (!notice) {
             res.status(404).json({
@@ -99,11 +100,11 @@ const editNotice = async (req: Request, res: Response): Promise<void> => {
 };
 
 // Delete Notice (Admin)
-const deleteNotice = async (req: Request, res: Response): Promise<void> => {
+const deleteNotice = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
 
-        const notice = await Notice.findByIdAndDelete(id);
+        const notice = await Notice.findOneAndDelete({ _id: id, organizationId: req.user?.organizationId });
 
         if (!notice) {
             res.status(404).json({
@@ -127,10 +128,9 @@ const deleteNotice = async (req: Request, res: Response): Promise<void> => {
 };
 
 // Get All Notices (Admin)
-const getAllNoticesAdmin = async (req: Request, res: Response): Promise<void> => {
+const getAllNoticesAdmin = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        // Fetch all notices and populate the 'streams' and 'targetExams' fields
-        const notices = await Notice.find()
+        const notices = await Notice.find({ organizationId: req.user?.organizationId })
             .populate('streams')
             .populate('targetExams')
             .sort({ createdAt: -1 });
@@ -149,7 +149,7 @@ const getAllNoticesAdmin = async (req: Request, res: Response): Promise<void> =>
 };
 
 // Get Notices for Student (Student)
-const getNoticesForStudent = async (req: Request, res: Response): Promise<void> => {
+const getNoticesForStudent = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const userId = req.user?.id;
 
@@ -161,8 +161,7 @@ const getNoticesForStudent = async (req: Request, res: Response): Promise<void> 
             return;
         }
 
-        // Fetch student details from Student schema
-        const student = await Student.findById(userId).select('currentClass stream targetExams');
+        const student = await Student.findOne({ _id: userId, organizationId: req.user?.organizationId }).select('currentClass stream targetExams');
 
         if (!student) {
             res.status(404).json({
@@ -174,6 +173,7 @@ const getNoticesForStudent = async (req: Request, res: Response): Promise<void> 
 
         // Build query to fetch relevant notices
         const query: any = {
+            organizationId: req.user?.organizationId,
             $or: [
                 { isForAll: true }, // Notices for all students
                 {
@@ -212,11 +212,11 @@ const getNoticesForStudent = async (req: Request, res: Response): Promise<void> 
 
 
 // Get Single Notice
-const getNoticeById = async (req: Request, res: Response): Promise<void> => {
+const getNoticeById = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
 
-        const notice = await Notice.findById(id)
+        const notice = await Notice.findOne({ _id: id, organizationId: req.user?.organizationId })
             .populate('streams')
             .populate('targetExams');
 

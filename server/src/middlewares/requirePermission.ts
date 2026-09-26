@@ -23,7 +23,7 @@ export const requirePermission = (permissionKeys: string | string[]) => {
             }
 
             // Fetch the most up-to-date permissions from the DB
-            const adminDoc = await Admin.findById(user.id);
+            const adminDoc = await Admin.findOne({ _id: user.id, organizationId: user.organizationId });
             if (!adminDoc) {
                 res.status(404).json({ success: false, message: 'Admin record not found' });
                 return;
@@ -34,7 +34,7 @@ export const requirePermission = (permissionKeys: string | string[]) => {
 
             // @ts-ignore - dynamic key access
             const adminPerms = adminDoc.permissions || {};
-            const hasPermission = keys.some(key => adminPerms[key] === true);
+            const hasPermission = keys.some(key => (adminPerms as Record<string, boolean>)[key] === true);
 
             if (!hasPermission) {
                 res.status(403).json({

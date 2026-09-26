@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface INotice extends Document {
+  organizationId: mongoose.Types.ObjectId;
   heading: string;
   description?: string;
   imageLink?: string;
@@ -15,6 +16,7 @@ export interface INotice extends Document {
 
 const NoticeSchema = new Schema<INotice>(
   {
+    organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
     heading: {
       type: String,
       required: [true, 'Heading is required'],

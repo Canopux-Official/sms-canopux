@@ -293,6 +293,7 @@ import adminLandingPageRoutes from './routes/admin/admin.landingPageRoutes';
 import adminMarksRoutes from './routes/admin/admin.marksRoutes';
 import studentMarksRoutes from './routes/student/studentMarksRoutes';
 import landingPageController from './controllers/landingPageController';
+import resolveTenant from './middlewares/resolveTenant';
 
 // -----------------------------------------------------------------------
 // App setup
@@ -305,13 +306,24 @@ app.use(helmet());
 app.use(compression());
 
 // CORS — tighten origin to your actual frontend URL
-app.use(
-  cors({
-    origin: process.env.CLIENT_LINK,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  })
-);
+// app.use(
+//   cors({
+//     origin: process.env.CLIENT_LINK,
+//     credentials: true,
+//     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+//   })
+// );
+
+app.use(cors({
+  origin: (origin: any, callback: any) => {
+    const allowed = /^https:\/\/([a-z0-9-]+\.)?sms\.canopux\.org$/;
+    if (!origin || allowed.test(origin) || origin.startsWith('http://localhost')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+}));
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
@@ -323,6 +335,7 @@ app.use(
     max: 500,
     standardHeaders: true,
     legacyHeaders: false,
+    keyGenerator: (req: any) => req.organizationId ? String(req.organizationId) : req.ip,
     message: { success: false, error: 'Too many requests. Please try again later.' },
   })
 );
@@ -348,8 +361,8 @@ app.use(async (_req: Request, res: Response, next: NextFunction) => {
 // -----------------------------------------------------------------------
 // Routes
 // -----------------------------------------------------------------------
-app.get('/landingPage', (req: Request, res: Response) => {
-  landingPageController.getLandingPage(req, res);
+app.get('/landingPage', resolveTenant, (req: Request, res: Response) => {
+  landingPageController.getLandingPage(req as any, res);
 });
 
 app.use('/auth', authRoutes);

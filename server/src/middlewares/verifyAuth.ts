@@ -6,6 +6,7 @@ export interface AuthRequest extends Request {
   user?: {
     id: string;
     role: 'student' | 'admin' | 'superadmin';
+    organizationId: string;
     currentClass?: string;
   };
 }

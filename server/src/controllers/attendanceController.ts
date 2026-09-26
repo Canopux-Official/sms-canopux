@@ -1,13 +1,10 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import mongoose from 'mongoose';
+import { AuthRequest } from '../middlewares/verifyAuth';
 import Student from '../models/Student';
 import Attendance from '../models/Attendance';
 
-/**
- * GET /api/attendance/admin-view
- * Fetch merged list of active students and their attendance records for a specific month/year
- */
-export const getAdminAttendanceView = async (req: Request, res: Response) => {
+export const getAdminAttendanceView = async (req: AuthRequest, res: Response) => {
   try {
     const {
       currentClass,
@@ -53,6 +50,7 @@ export const getAdminAttendanceView = async (req: Request, res: Response) => {
     // Build student filter based on provided parameters
     const studentFilter: any = {
       isActive: true,
+      organizationId: req.user?.organizationId,
       admissionDate: { $lte: new Date(selectedYear, selectedMonth - 1, lastDayToShow, 23, 59, 59, 999) }
     };
 
@@ -349,7 +347,8 @@ const toObjectId = (id: string | mongoose.Types.ObjectId): mongoose.Types.Object
  * POST /api/attendance/sync
  * Bulk sync attendance records - handles both creating new records and updating existing ones
  */
-export const bulkSyncAttendance = async (req: Request, res: Response) => {
+export const bulkSyncAttendance = async (req: AuthRequest, res: Response) => {
+  const organizationId = req.user?.organizationId;
   try {
     const { updates }: BulkSyncRequest = req.body;
 
@@ -407,7 +406,8 @@ export const bulkSyncAttendance = async (req: Request, res: Response) => {
     // Fetch all students to validate enrollment dates and existence
     const students = await Student.find({
       _id: { $in: studentObjectIds },
-      isActive: true
+      isActive: true,
+      organizationId
     });
 
     // Create a map for quick student lookup
@@ -500,7 +500,8 @@ export const bulkSyncAttendance = async (req: Request, res: Response) => {
           filter: {
             studentId: toObjectId(studentId),
             year: parseInt(year),
-            month: parseInt(month)
+            month: parseInt(month),
+            organizationId
           },
           update: {
             $set: daysUpdate,
@@ -508,6 +509,7 @@ export const bulkSyncAttendance = async (req: Request, res: Response) => {
               studentId: toObjectId(studentId),
               year: parseInt(year),
               month: parseInt(month),
+              organizationId,
               stats: {
                 present: 0,
                 absent: 0
@@ -539,7 +541,8 @@ export const bulkSyncAttendance = async (req: Request, res: Response) => {
       const attendanceRecord = await Attendance.findOne({
         studentId: record.studentId,
         year: record.year,
-        month: record.month
+        month: record.month,
+        organizationId
       });
 
       if (attendanceRecord) {
@@ -574,7 +577,8 @@ export const bulkSyncAttendance = async (req: Request, res: Response) => {
             filter: {
               studentId: record.studentId,
               year: record.year,
-              month: record.month
+              month: record.month,
+              organizationId
             },
             update: {
               $set: {
@@ -594,6 +598,7 @@ export const bulkSyncAttendance = async (req: Request, res: Response) => {
 
     // Fetch final updated records to return
     const updatedRecords = await Attendance.find({
+      organizationId,
       $or: Array.from(affectedRecords.values()).map(r => ({
         studentId: r.studentId,
         year: r.year,

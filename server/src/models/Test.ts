@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ITest extends Document {
+  organizationId: mongoose.Types.ObjectId;
   heading: string; // Test/exam name — doubles as the subject label (e.g. "Physics Unit Test 1")
   description?: string; // Optional syllabus/description shown to students
   totalMarks: number;
@@ -18,6 +19,7 @@ export interface ITest extends Document {
 
 const TestSchema: Schema = new Schema(
   {
+    organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
     heading: { type: String, required: true, trim: true },
     description: { type: String, trim: true, default: '' },
     totalMarks: { type: Number, required: true, min: 1 },

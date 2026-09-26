@@ -137,6 +137,8 @@ const galleryImageSchema = new mongoose.Schema({
 // ==========================================
 const landingPageSchema = new mongoose.Schema({
 
+    organizationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true, unique: true },
+
     // --- HERO SECTION ---
     hero: {
         // The massive text at the very top of the site. Example: 'Transform Your Academic Excellence'

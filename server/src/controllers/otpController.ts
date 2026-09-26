@@ -90,27 +90,26 @@ const handleControllerError = (error: any, context: string) => {
 export const sendOtp = async (
   email: string,
   userId: mongoose.Types.ObjectId | string,
-  onModel: 'student' | 'admin'
+  onModel: 'student' | 'admin',
+  organizationId: mongoose.Types.ObjectId | string
 ) => {
   try {
     if (!email) throw new Error("Email is required");
     if (!userId || !onModel) throw new Error("User ID and Model type are required");
 
-    // Check if OTP exists -> Treat as Resend
-    const existingOtp = await Otp.findOne({ email });
+    const existingOtp = await Otp.findOne({ email, organizationId });
     if (existingOtp) {
-      const resendResult = await resendOtp(email);
+      const resendResult = await resendOtp(email, organizationId as any);
       if (!resendResult.success) {
         return resendResult;
       }
       return { success: true, message: "OTP sent successfully (Resent)" };
     }
 
-    // --- NORMAL FLOW (Fresh) ---
     const otp = authenticator.generate(email + process.env.OTP_SECRET);
     const hashedOtp = await bcrypt.hash(otp, 10);
 
-    await Otp.deleteMany({ email });
+    await Otp.deleteMany({ email, organizationId });
 
     await Otp.create({
       email,
@@ -118,6 +117,7 @@ export const sendOtp = async (
       attempts: 0,
       userId: new mongoose.Types.ObjectId(userId),
       onModel,
+      organizationId,
       createdAt: new Date()
     });
 
@@ -136,13 +136,13 @@ export const sendOtp = async (
 };
 
 
-export const verifyOtp = async (email: string, otp: string) => {
+export const verifyOtp = async (email: string, otp: string, organizationId: string) => {
   try {
     if (!email || !otp) {
       return { success: false, message: "Email and OTP required" };
     }
 
-    const otpDoc = await Otp.findOne({ email });
+    const otpDoc = await Otp.findOne({ email, organizationId });
 
     if (!otpDoc) {
       return { success: false, message: "OTP expired or not found" };
@@ -170,7 +170,7 @@ export const verifyOtp = async (email: string, otp: string) => {
       };
     }
 
-    await Otp.deleteOne({ email });
+    await Otp.deleteOne({ email, organizationId });
 
     return { success: true, message: "OTP verified successfully" };
 
@@ -179,11 +179,11 @@ export const verifyOtp = async (email: string, otp: string) => {
   }
 };
 
-export const resendOtp = async (email: string) => {
+export const resendOtp = async (email: string, organizationId: string) => {
   try {
     if (!email) throw new Error("Email is required");
 
-    const existingOtp = await Otp.findOne({ email });
+    const existingOtp = await Otp.findOne({ email, organizationId });
 
     if (!existingOtp) {
       return {

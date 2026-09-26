@@ -7,11 +7,12 @@ import { sendOtp, verifyOtp, resendOtp } from '../../controllers/otpController';
 import { changePassword, getAllStudentProfiles } from '../../controllers/studentController';
 import verifyAuth, { AuthRequest } from '../../middlewares/verifyAuth';
 import bcrypt from 'bcryptjs';
+import resolveTenant, { TenantRequest } from '../../middlewares/resolveTenant';
 
 const router = express.Router();
 const jwt_secret = process.env.JWT_SECRET;
 
-router.post('/getLoggedInUser', async (req, res): Promise<any> => {
+router.post('/getLoggedInUser', resolveTenant, async (req: TenantRequest, res): Promise<any> => {
     const { name, dob, phoneNumber, currentClass, password, role, enrollmentNumber } = req.body;
 
     if (!jwt_secret) {
@@ -21,7 +22,7 @@ router.post('/getLoggedInUser', async (req, res): Promise<any> => {
     try {
         // admin login flow
         if (role === 'admin' || role === 'superadmin') {
-            const admin = await Admin.findOne({ phoneNumber, role });
+            const admin = await Admin.findOne({ phoneNumber, role, organizationId: req.organizationId });
 
             if (!admin) {
                 return res.status(404).json({ success: false, message: 'Admin not found' });
@@ -30,7 +31,7 @@ router.post('/getLoggedInUser', async (req, res): Promise<any> => {
             if (!isMatch) {
                 return res.status(401).json({ success: false, message: 'Invalid password' });
             }
-            const otpResponse = await sendOtp(admin.email, admin._id, 'admin');
+            const otpResponse = await sendOtp(admin.email, admin._id, 'admin', req.organizationId as any)
             if (!otpResponse.success) {
                 // Send the error message from the controller (e.g. "Email service auth failed") back to frontend
                 return res.status(500).json(otpResponse);
@@ -47,7 +48,8 @@ router.post('/getLoggedInUser', async (req, res): Promise<any> => {
 
         // student login flow
         const student = await Student.findOne({
-            enrollmentNumber: enrollmentNumber
+            enrollmentNumber: enrollmentNumber,
+            organizationId: req.organizationId
         });
 
         if (!student) {
@@ -71,7 +73,7 @@ router.post('/getLoggedInUser', async (req, res): Promise<any> => {
         // Case A: No Email -> Immediate Login
         if (!student.email) {
             const authToken = jwt.sign(
-                { id: student._id, role: "student", currentClass: student.currentClass },
+                { id: student._id, role: "student", organizationId: student.organizationId, currentClass: student.currentClass },
                 jwt_secret,
                 { expiresIn: '30d' }
             );
@@ -85,7 +87,7 @@ router.post('/getLoggedInUser', async (req, res): Promise<any> => {
         }
 
         // Case B: Email Exists -> Require OTP
-        const otpResponse = await sendOtp(student.email, student._id, "student");
+        const otpResponse = await sendOtp(student.email, student._id, "student", req.organizationId as any)
         if (!otpResponse.success) {
             // Send the error message from the controller (e.g. "Email service auth failed") back to frontend
             return res.status(500).json(otpResponse);
@@ -105,10 +107,10 @@ router.post('/getLoggedInUser', async (req, res): Promise<any> => {
     }
 });
 
-router.post('/resendOtp', async (req, res): Promise<any> => {
+router.post('/resendOtp', resolveTenant, async (req: TenantRequest, res): Promise<any> => {
     const { email } = req.body;
     try {
-        const result = await resendOtp(email);
+        const result = await resendOtp(email, req.organizationId as any);
 
         // If the controller returns a specific message indicating cooldown
         if (result.message && result.message.includes('Please wait')) {
@@ -126,21 +128,21 @@ router.post('/resendOtp', async (req, res): Promise<any> => {
     }
 });
 
-router.post('/verifyOtp', async (req, res): Promise<any> => {
+router.post('/verifyOtp', resolveTenant, async (req: TenantRequest, res): Promise<any> => {
     const { email, otp, enrollmentNumber } = req.body;
     try {
-        const result = await verifyOtp(email, otp);
+        const result = await verifyOtp(email, otp, req.organizationId as string);
 
         if (result.success) {
-            // Determine if user is Admin or Student based on email lookup
-            let user: any = await Admin.findOne({ email });
+            let user: any = await Admin.findOne({ email, organizationId: req.organizationId });
             let userRole = "student";
 
             if (user) {
-                userRole = user.role; // This will be 'admin' or 'superadmin'
+                userRole = user.role;
             } else {
                 user = await Student.findOne({
-                    enrollmentNumber: enrollmentNumber
+                    enrollmentNumber: enrollmentNumber,
+                    organizationId: req.organizationId
                 });
             }
 
@@ -149,8 +151,8 @@ router.post('/verifyOtp', async (req, res): Promise<any> => {
             }
 
             const payload = (userRole === "admin" || userRole === "superadmin")
-                ? { id: user._id, role: userRole }
-                : { id: user._id, role: "student", currentClass: user.currentClass };
+                ? { id: user._id, role: userRole, organizationId: user.organizationId }
+                : { id: user._id, role: "student", organizationId: user.organizationId, currentClass: user.currentClass };
 
             const authToken = jwt.sign(
                 payload,
@@ -210,6 +212,6 @@ router.get('/verifyToken', verifyAuth, async (req: AuthRequest, res): Promise<an
 });
 
 router.post('/changePassword', verifyAuth, changePassword);
-router.get('/getAllStudentProfiles', getAllStudentProfiles);
+router.get('/getAllStudentProfiles', resolveTenant, getAllStudentProfiles);
 
 export default router;

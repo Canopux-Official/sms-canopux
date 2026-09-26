@@ -1,5 +1,6 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import mongoose from 'mongoose';
+import { AuthRequest } from '../middlewares/verifyAuth';
 import Test from '../models/Test';
 import Result from '../models/Result';
 import Student from '../models/Student';
@@ -17,7 +18,7 @@ const isValidObjectId = (id: any) => mongoose.Types.ObjectId.isValid(id);
 // ---------------------------------------------------------------------
 
 // POST /admin/marks/create-test
-export const createTest = async (req: Request, res: Response) => {
+export const createTest = async (req: AuthRequest, res: Response) => {
   try {
     const { heading, description, totalMarks, testDate, classType, stream, targetExam } = req.body;
 
@@ -43,7 +44,8 @@ export const createTest = async (req: Request, res: Response) => {
       classType,
       stream: STREAM_REQUIRED_CLASSES.includes(classType) ? stream : (stream || null),
       targetExam,
-      status: 'draft'
+      status: 'draft',
+      organizationId: req.user?.organizationId
     });
 
     const populated = await Test.findById(newTest._id)
@@ -62,9 +64,9 @@ export const createTest = async (req: Request, res: Response) => {
 };
 
 // GET /admin/marks/all-tests
-export const getAllTests = async (req: Request, res: Response) => {
+export const getAllTests = async (req: AuthRequest, res: Response) => {
   try {
-    const tests = await Test.find({})
+    const tests = await Test.find({ organizationId: req.user?.organizationId })
       .populate('stream', 'name')
       .populate('targetExam', 'name')
       .sort({ testDate: -1 });
@@ -110,10 +112,10 @@ export const getAllTests = async (req: Request, res: Response) => {
 };
 
 // GET /admin/marks/test/:id
-export const getTestById = async (req: Request, res: Response) => {
+export const getTestById = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const test = await Test.findById(id).populate('stream', 'name').populate('targetExam', 'name');
+    const test = await Test.findOne({ _id: id, organizationId: req.user?.organizationId }).populate('stream', 'name').populate('targetExam', 'name');
     if (!test) return res.status(404).json({ success: false, message: 'Test not found' });
     return res.status(200).json({ success: true, data: test });
   } catch (error: any) {
@@ -126,10 +128,10 @@ export const getTestById = async (req: Request, res: Response) => {
 // been assigned (scheduled/published) the scope that filtered them — class, stream,
 // targetExam, totalMarks — is locked to protect data integrity; heading, description
 // and testDate remain editable regardless of status.
-export const updateTest = async (req: Request, res: Response) => {
+export const updateTest = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const test = await Test.findById(id);
+    const test = await Test.findOne({ _id: id, organizationId: req.user?.organizationId });
     if (!test) return res.status(404).json({ success: false, message: 'Test not found' });
 
     const { heading, description, testDate } = req.body;
@@ -179,10 +181,10 @@ export const updateTest = async (req: Request, res: Response) => {
 };
 
 // DELETE /admin/marks/delete-test/:id
-export const deleteTest = async (req: Request, res: Response) => {
+export const deleteTest = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const test = await Test.findByIdAndDelete(id);
+    const test = await Test.findOneAndDelete({ _id: id, organizationId: req.user?.organizationId });
     if (!test) return res.status(404).json({ success: false, message: 'Test not found' });
 
     await Result.deleteMany({ testId: id });
@@ -202,16 +204,17 @@ export const deleteTest = async (req: Request, res: Response) => {
 // Filters students the same way Attendance/Material do: exact class match,
 // stream required only for 11/12/droppers, and the student must be enrolled
 // for the test's target exam.
-export const getEligibleStudents = async (req: Request, res: Response) => {
+export const getEligibleStudents = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const test = await Test.findById(id);
+    const test = await Test.findOne({ _id: id, organizationId: req.user?.organizationId });
     if (!test) return res.status(404).json({ success: false, message: 'Test not found' });
 
     const studentFilter: any = {
       isActive: true,
       currentClass: test.classType,
-      targetExams: test.targetExam
+      targetExams: test.targetExam,
+      organizationId: req.user?.organizationId
     };
 
     if (STREAM_REQUIRED_CLASSES.includes(test.classType)) {
@@ -250,12 +253,12 @@ export const getEligibleStudents = async (req: Request, res: Response) => {
 // Diffs against existing Result rows: creates rows for newly-added students,
 // deletes rows for deselected students. A test moves from draft -> scheduled
 // the first time at least one student is assigned.
-export const assignStudents = async (req: Request, res: Response) => {
+export const assignStudents = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { studentIds } = req.body;
 
-    const test = await Test.findById(id);
+    const test = await Test.findOne({ _id: id, organizationId: req.user?.organizationId });
     if (!test) return res.status(404).json({ success: false, message: 'Test not found' });
 
     if (test.status === 'published') {
@@ -284,7 +287,8 @@ export const assignStudents = async (req: Request, res: Response) => {
           testId: id,
           studentId: sid,
           marksObtained: null,
-          isAbsent: false
+          isAbsent: false,
+          organizationId: req.user?.organizationId
         })),
         { ordered: false }
       );
@@ -317,11 +321,11 @@ export const assignStudents = async (req: Request, res: Response) => {
 // ---------------------------------------------------------------------
 
 // GET /admin/marks/entry/:id
-export const getMarksEntry = async (req: Request, res: Response) => {
+export const getMarksEntry = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
 
-    const test = await Test.findById(id).populate('stream', 'name').populate('targetExam', 'name');
+    const test = await Test.findOne({ _id: id, organizationId: req.user?.organizationId }).populate('stream', 'name').populate('targetExam', 'name');
     if (!test) return res.status(404).json({ success: false, message: 'Test not found' });
 
     const results = await Result.find({ testId: id })
@@ -351,12 +355,12 @@ export const getMarksEntry = async (req: Request, res: Response) => {
 
 // PATCH /admin/marks/entry/:id
 // Body: { entries: [{ studentId, marksObtained, isAbsent }] } — bulk save, spreadsheet-style.
-export const saveMarksEntry = async (req: Request, res: Response) => {
+export const saveMarksEntry = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { entries } = req.body;
 
-    const test = await Test.findById(id);
+    const test = await Test.findOne({ _id: id, organizationId: req.user?.organizationId });
     if (!test) return res.status(404).json({ success: false, message: 'Test not found' });
 
     if (test.status === 'published') {
@@ -418,10 +422,10 @@ export const saveMarksEntry = async (req: Request, res: Response) => {
 // ranking (1, 2, 2, 4 — ties share a rank, the next rank skips accordingly).
 // Absent students get rank = null, percentage = null and are excluded from ranking.
 // Results can only be published on or after the test's scheduled date.
-export const publishTest = async (req: Request, res: Response) => {
+export const publishTest = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const test = await Test.findById(id);
+    const test = await Test.findOne({ _id: id, organizationId: req.user?.organizationId });
     if (!test) return res.status(404).json({ success: false, message: 'Test not found' });
 
     if (test.status === 'published') {
@@ -506,10 +510,10 @@ export const publishTest = async (req: Request, res: Response) => {
 };
 
 // POST /admin/marks/unpublish/:id
-export const unpublishTest = async (req: Request, res: Response) => {
+export const unpublishTest = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const test = await Test.findById(id);
+    const test = await Test.findOne({ _id: id, organizationId: req.user?.organizationId });
     if (!test) return res.status(404).json({ success: false, message: 'Test not found' });
 
     if (test.status !== 'published') {
@@ -534,7 +538,7 @@ export const unpublishTest = async (req: Request, res: Response) => {
 // ---------------------------------------------------------------------
 
 // GET /student/marks
-export const getStudentMarks = async (req: Request, res: Response) => {
+export const getStudentMarks = async (req: AuthRequest, res: Response) => {
   try {
     const studentId = req.user?.id;
     if (!studentId) {

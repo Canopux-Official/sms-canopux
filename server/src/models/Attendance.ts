@@ -1,7 +1,8 @@
-import mongoose , {Schema,Document} from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
 
 
-export interface IAttendance extends Document{
+export interface IAttendance extends Document {
+    organizationId: mongoose.Types.ObjectId;
     studentId: mongoose.Types.ObjectId;
     year: number;
     month: number;
@@ -14,17 +15,18 @@ export interface IAttendance extends Document{
 
 
 const AttedanceSchema: Schema = new Schema({
+    organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
     studentId: {
         type: Schema.Types.ObjectId,
         required: true,
         ref: 'Student'
     },
-    year:{
+    year: {
         type: Number,
         required: true,
 
     },
-    month:{
+    month: {
         type: Number,
         required: true,
     },
@@ -34,11 +36,13 @@ const AttedanceSchema: Schema = new Schema({
         default: new Map()
     },
     stats: {
-        present: {type: Number, default: 0},
-        absent: {type: Number, default: 0}
+        present: { type: Number, default: 0 },
+        absent: { type: Number, default: 0 }
     }
-},{
+}, {
     timestamps: true
 })
 
-export default mongoose.model<IAttendance>('Attendance',AttedanceSchema);
+AttedanceSchema.index({ organizationId: 1, studentId: 1, year: 1, month: 1 }, { unique: true });
+
+export default mongoose.model<IAttendance>('Attendance', AttedanceSchema);

@@ -17,6 +17,7 @@ export interface IPathItem {
 }
 
 export interface IMaterial extends Document {
+  organizationId: mongoose.Types.ObjectId;
   heading: string;
   description?: string;
   fileDetails: IFileDetail[];
@@ -40,6 +41,7 @@ export interface IMaterial extends Document {
 }
 
 const MaterialSchema: Schema = new Schema({
+  organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
   heading: { type: String, required: false },
   description: { type: String, default: null, required: false },
 

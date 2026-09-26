@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-
+import { Response } from 'express';
+import { AuthRequest } from '../middlewares/verifyAuth';
 import mongoose from 'mongoose';
 import Attendance, { IAttendance } from '../models/Attendance';
 
@@ -7,11 +7,10 @@ import Attendance, { IAttendance } from '../models/Attendance';
  * Get attendance data for a student for a specific year
  * Returns all 12 months with attendance data and stats
  */
-export const getYearlyAttendance = async (req: Request, res: Response) => {
+export const getYearlyAttendance = async (req: AuthRequest, res: Response) => {
     try {
-        // Get userId from authenticated request (req.user.id)
         const studentId = req.user?.id;
-        
+
         // Get year from query params
         const { year } = req.query;
 
@@ -31,7 +30,7 @@ export const getYearlyAttendance = async (req: Request, res: Response) => {
         }
 
         const yearNum = parseInt(year as string);
-        
+
         if (isNaN(yearNum) || yearNum < 2000 || yearNum > 2100) {
             return res.status(400).json({
                 success: false,
@@ -47,7 +46,8 @@ export const getYearlyAttendance = async (req: Request, res: Response) => {
         // Fetch all attendance records for the student for the specified year
         const attendanceRecords = await Attendance.find({
             studentId: new mongoose.Types.ObjectId(studentId),
-            year: yearNum
+            year: yearNum,
+            organizationId: req.user?.organizationId
         }).sort({ month: 1 });
 
         // Create a map for quick lookup
@@ -64,7 +64,7 @@ export const getYearlyAttendance = async (req: Request, res: Response) => {
 
         for (let month = 1; month <= 12; month++) {
             const record = attendanceMap.get(month);
-            
+
             // Determine month status
             let status: 'past' | 'current' | 'future';
             if (yearNum < currentYear || (yearNum === currentYear && month < currentMonth)) {
@@ -113,8 +113,8 @@ export const getYearlyAttendance = async (req: Request, res: Response) => {
                         absent: 0,
                         total: 0
                     },
-                    message: status === 'future' 
-                        ? 'This month hasn\'t started yet' 
+                    message: status === 'future'
+                        ? 'This month hasn\'t started yet'
                         : 'No attendance data available for this month'
                 });
             }
@@ -125,7 +125,7 @@ export const getYearlyAttendance = async (req: Request, res: Response) => {
             totalDaysMarked,
             totalPresent,
             totalAbsent,
-            attendancePercentage: totalDaysMarked > 0 
+            attendancePercentage: totalDaysMarked > 0
                 ? parseFloat(((totalPresent / totalDaysMarked) * 100).toFixed(2))
                 : 0
         };
@@ -160,7 +160,7 @@ export const getYearlyAttendance = async (req: Request, res: Response) => {
  * Get attendance stats summary for a student
  * Useful for dashboard/overview
  */
-export const getAttendanceStats = async (req: Request, res: Response) => {
+export const getAttendanceStats = async (req: AuthRequest, res: Response) => {
     try {
         const studentId = req.user?.id;
 
@@ -171,9 +171,9 @@ export const getAttendanceStats = async (req: Request, res: Response) => {
             });
         }
 
-        // Get all attendance records for the student
         const attendanceRecords = await Attendance.find({
-            studentId: new mongoose.Types.ObjectId(studentId)
+            studentId: new mongoose.Types.ObjectId(studentId),
+            organizationId: req.user?.organizationId
         });
 
         let totalPresent = 0;
@@ -200,7 +200,7 @@ export const getAttendanceStats = async (req: Request, res: Response) => {
                     totalDays,
                     present: totalPresent,
                     absent: totalAbsent,
-                    attendancePercentage: totalDays > 0 
+                    attendancePercentage: totalDays > 0
                         ? parseFloat(((totalPresent / totalDays) * 100).toFixed(2))
                         : 0
                 },
@@ -231,7 +231,7 @@ export const getAttendanceStats = async (req: Request, res: Response) => {
  * Get available years for a student
  * Helps populate year dropdown
  */
-export const getAvailableYears = async (req: Request, res: Response) => {
+export const getAvailableYears = async (req: AuthRequest, res: Response) => {
     try {
         const studentId = req.user?.id;
 
@@ -243,7 +243,8 @@ export const getAvailableYears = async (req: Request, res: Response) => {
         }
 
         const years = await Attendance.distinct('year', {
-            studentId: new mongoose.Types.ObjectId(studentId)
+            studentId: new mongoose.Types.ObjectId(studentId),
+            organizationId: req.user?.organizationId
         });
 
         // Sort years in descending order

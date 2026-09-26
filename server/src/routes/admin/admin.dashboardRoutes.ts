@@ -1,27 +1,28 @@
 import { getActiveStreamCount } from "../../controllers/streamController";
 import { getActiveStudentCount } from "../../controllers/studentController";
-import { getActiveSubjectCount } from "../../controllers/subjectController";
+
 import { getActiveTargetExamCount } from "../../controllers/targetExamController";
 
 import express, { Request, Response } from 'express';
 import verifyAuth, { AuthRequest } from '../../middlewares/verifyAuth';
 import Admin from '../../models/Admin';
+import { getActiveSubjectCount } from "../../controllers/subjectController";
 
 const router = express.Router();
 
-router.get('/getAdminDashboardDetails', verifyAuth, async (req: Request, res: Response): Promise<any> => {
+router.get('/getAdminDashboardDetails', verifyAuth, async (req: AuthRequest, res: Response): Promise<any> => {
     try {
-        // Execute all count queries in parallel for better performance
+        const organizationId = req.user?.organizationId;
         const [
             activeStudentCount,
             activeStreamCount,
             activeTargetExamCount,
             activeSubjectCount
         ] = await Promise.all([
-            getActiveStudentCount(),
-            getActiveStreamCount(),
-            getActiveTargetExamCount(),
-            getActiveSubjectCount()
+            getActiveStudentCount(organizationId as any),
+            getActiveStreamCount(organizationId as any),
+            getActiveTargetExamCount(organizationId as any),
+            getActiveSubjectCount(organizationId as any)
         ]);
 
         return res.status(200).json({
@@ -51,7 +52,7 @@ router.get('/me', verifyAuth, async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
-        const admin = await Admin.findById(req.user.id).select('-password');
+        const admin = await Admin.findOne({ _id: req.user.id, organizationId: req.user.organizationId }).select('-password');
         if (!admin) {
             res.status(404).json({ success: false, message: "Admin not found" });
             return;

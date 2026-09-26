@@ -1,18 +1,13 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { AuthRequest } from '../middlewares/verifyAuth';
 import Student from "../models/Student";
 import Subject from "../models/Subject";
 import Stream from "../models/Stream";       // Imported
 import TargetExam from "../models/TargetExam"; // Imported
 import Counter from "../models/Counter"; // Imported
 import bcrypt from 'bcryptjs';
+import { TenantRequest } from '../middlewares/resolveTenant';
 
-declare global {
-    namespace Express {
-        interface Request {
-            user?: { id: string };
-        }
-    }
-}
 
 // Helper to hash passwords
 const hashPassword = async (password: string) => {
@@ -21,36 +16,34 @@ const hashPassword = async (password: string) => {
 
 
 // Helper: Map Subject Names -> ObjectIds
-const getSubjectIds = async (subjectInput: string | string[]) => {
+const getSubjectIds = async (subjectInput: string | string[], organizationId?: string) => {
     if (!subjectInput) return [];
     const names = Array.isArray(subjectInput) ? subjectInput : String(subjectInput).split(',');
     if (names.length === 0) return [];
-    // Case-insensitive lookup recommended, but exact match used here for speed
-    const subjects = await Subject.find({ name: { $in: names } });
+    const subjects = await Subject.find({ name: { $in: names }, organizationId });
     return subjects.map(s => s._id);
 };
 
-// Helper: Get Stream ObjectId by Name
-const getStreamId = async (streamName: string) => {
+const getStreamId = async (streamName: string, organizationId?: string) => {
     if (!streamName || streamName.toUpperCase() === 'N/A') return null;
-    const streamDoc = await Stream.findOne({ name: streamName });
+    const streamDoc = await Stream.findOne({ name: streamName, organizationId });
     return streamDoc ? streamDoc._id : null;
 };
 
-// Helper: Get TargetExam ObjectIds by Names
-const getTargetExamIds = async (examNames: string | string[]) => {
+const getTargetExamIds = async (examNames: string | string[], organizationId?: string) => {
     if (!examNames) return [];
     const names = Array.isArray(examNames) ? examNames : String(examNames).split(',');
     if (names.length === 0) return [];
 
-    const exams = await TargetExam.find({ name: { $in: names } });
+    const exams = await TargetExam.find({ name: { $in: names }, organizationId });
     return exams.map(e => e._id);
 };
 
 // Helper: Get Next Enrollment Number
-const getNextEnrollmentNumber = async () => {
+//here i need to add the slug of the organization
+const getNextEnrollmentNumber = async (organizationId: string) => {
     const counter = await Counter.findByIdAndUpdate(
-        'enrollmentNumber',
+        `enrollmentNumber_${organizationId}`,
         { $inc: { sequence_value: 1 } },
         { new: true, upsert: true }
     );
@@ -59,9 +52,9 @@ const getNextEnrollmentNumber = async () => {
 };
 
 // --- READ ---
-export const getAllStudents = async (req: Request, res: Response) => {
+export const getAllStudents = async (req: AuthRequest, res: Response) => {
     try {
-        const students = await Student.find({})
+        const students = await Student.find({ organizationId: req.user?.organizationId })
             .populate({
                 path: 'enrolledSubjects',
                 model: Subject,
@@ -79,10 +72,9 @@ export const getAllStudents = async (req: Request, res: Response) => {
     }
 }
 
-export const getStudentById = async (req: Request, res: Response) => {
-    console.log(req.user);
+export const getStudentById = async (req: AuthRequest, res: Response) => {
     try {
-        const student = await Student.findById(req.user?.id)
+        const student = await Student.findOne({ _id: req.user?.id, organizationId: req.user?.organizationId })
             .populate('enrolledSubjects', 'name stream')
             .populate('stream', 'name')
             .populate('targetExams', 'name');
@@ -95,8 +87,9 @@ export const getStudentById = async (req: Request, res: Response) => {
 }
 
 // --- CREATE ---
-export const addStudent = async (req: Request, res: Response) => {
+export const addStudent = async (req: AuthRequest, res: Response) => {
     try {
+        const organizationId = req.user?.organizationId;
         let students = [];
         if (req.body.students && Array.isArray(req.body.students)) {
             students = req.body.students;
@@ -151,16 +144,16 @@ export const addStudent = async (req: Request, res: Response) => {
 
             try {
                 // 1. Resolve Subjects
-                subjectIds = await getSubjectIds(student.enrolledSubjects);
+                subjectIds = await getSubjectIds(student.enrolledSubjects, organizationId);
 
                 // 2. Resolve Stream
                 if (rawStream) {
-                    streamId = await getStreamId(rawStream);
+                    streamId = await getStreamId(rawStream, organizationId);
                     // Optional: If stream provided but not found, you might want to warn or fail
                 }
 
                 // 3. Resolve Target Exams
-                targetExamIds = await getTargetExamIds(rawTargetExams);
+                targetExamIds = await getTargetExamIds(rawTargetExams, organizationId);
 
             } catch (err) {
                 console.error("Reference lookup failed", err);
@@ -173,7 +166,8 @@ export const addStudent = async (req: Request, res: Response) => {
                 name: name,
                 phoneNumber: phoneNumber,
                 currentClass: currentClass,
-                dob: dobDate
+                dob: dobDate,
+                organizationId
             });
 
             if (existingStudent) {
@@ -192,6 +186,7 @@ export const addStudent = async (req: Request, res: Response) => {
                         currentClass,
                         academicSession,
                         password: hashedPassword,
+                        organizationId,
 
                         // Pass RESOLVED IDs here, not strings
                         targetExams: targetExamIds,
@@ -202,7 +197,7 @@ export const addStudent = async (req: Request, res: Response) => {
                         parentPhoneNumber: student.parentPhoneNumber || undefined,
                         isActive: true,
                         admissionDate: new Date(),
-                        enrollmentNumber: await getNextEnrollmentNumber()
+                        enrollmentNumber: await getNextEnrollmentNumber(organizationId as string)
                     });
 
                     addedStudents.push(newStudent);
@@ -235,10 +230,11 @@ export const addStudent = async (req: Request, res: Response) => {
     }
 };
 
-export const updateStudent = async (req: Request, res: Response) => {
+export const updateStudent = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
         const updates = req.body;
+        const organizationId = req.user?.organizationId;
 
 
         // --- RESOLVE REFERENCES IF UPDATING ---
@@ -250,7 +246,7 @@ export const updateStudent = async (req: Request, res: Response) => {
             const isName = typeof firstItem === 'string' && !firstItem.match(/^[0-9a-fA-F]{24}$/);
 
             if (isName) {
-                updates.enrolledSubjects = await getSubjectIds(updates.enrolledSubjects);
+                updates.enrolledSubjects = await getSubjectIds(updates.enrolledSubjects, organizationId);
             }
         }
 
@@ -258,7 +254,7 @@ export const updateStudent = async (req: Request, res: Response) => {
         if (updates.stream && typeof updates.stream === 'string') {
             // Only resolve if it's not already an ObjectId
             if (!updates.stream.match(/^[0-9a-fA-F]{24}$/)) {
-                updates.stream = await getStreamId(updates.stream);
+                updates.stream = await getStreamId(updates.stream, organizationId);
             }
         }
         else {
@@ -271,7 +267,7 @@ export const updateStudent = async (req: Request, res: Response) => {
             const isName = typeof firstItem === 'string' && !firstItem.match(/^[0-9a-fA-F]{24}$/);
 
             if (isName) {
-                updates.targetExams = await getTargetExamIds(updates.targetExams);
+                updates.targetExams = await getTargetExamIds(updates.targetExams, organizationId);
             }
         }
 
@@ -283,7 +279,7 @@ export const updateStudent = async (req: Request, res: Response) => {
             delete updates.password;
         }
 
-        const updatedStudent = await Student.findByIdAndUpdate(id, updates, { new: true })
+        const updatedStudent = await Student.findOneAndUpdate({ _id: id, organizationId }, updates, { new: true })
             .populate('enrolledSubjects', 'name')
             .populate('stream', 'name')
             .populate('targetExams', 'name');
@@ -297,10 +293,10 @@ export const updateStudent = async (req: Request, res: Response) => {
 }
 
 // --- DELETE (Soft Delete) ---
-export const toggleStudentStatus = async (req: Request, res: Response) => {
+export const toggleStudentStatus = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
-        const student = await Student.findById(id);
+        const student = await Student.findOne({ _id: id, organizationId: req.user?.organizationId });
 
         if (!student) return res.status(404).json({ message: "Student not found" });
 
@@ -316,15 +312,16 @@ export const toggleStudentStatus = async (req: Request, res: Response) => {
 
 // --- BULK IMPORT ---
 
-export const bulkAddStudents = async (req: Request, res: Response) => {
+export const bulkAddStudents = async (req: AuthRequest, res: Response) => {
     try {
+        const organizationId = req.user?.organizationId;
         const { students } = req.body;
 
         if (!Array.isArray(students) || students.length === 0) {
             return res.status(400).json({ message: "Invalid data format: 'students' array is required." });
         }
 
-        const addedStudents = [];
+        const addedStudents: any = [];
         const failedStudents = [];
 
         for (const s of students) {
@@ -378,10 +375,9 @@ export const bulkAddStudents = async (req: Request, res: Response) => {
                 try {
                     let subjectInput = s.enrolledSubjects;
                     if (typeof subjectInput === 'string') {
-                        // Split by comma or pipe
                         subjectInput = subjectInput.split(/[|,]/).map((sub: string) => sub.trim());
                     }
-                    subjectIds = await getSubjectIds(subjectInput || []);
+                    subjectIds = await getSubjectIds(subjectInput || [], organizationId);
                 } catch (err) {
                     console.error(`Subject lookup warning for ${name}:`, err);
                 }
@@ -389,11 +385,11 @@ export const bulkAddStudents = async (req: Request, res: Response) => {
                 // B. Stream
                 let streamId = null;
                 if (rawStream) {
-                    streamId = await getStreamId(rawStream);
+                    streamId = await getStreamId(rawStream, organizationId);
                 }
 
                 // C. Target Exams
-                const targetExamIds = await getTargetExamIds(rawTargetExams);
+                const targetExamIds = await getTargetExamIds(rawTargetExams, organizationId);
 
                 // --- 5. Password Hashing ---
                 const passwordToHash = s.password || phoneNumber;
@@ -404,7 +400,8 @@ export const bulkAddStudents = async (req: Request, res: Response) => {
                     name: name,
                     phoneNumber: phoneNumber,
                     currentClass: currentClass,
-                    dob: dobDate
+                    dob: dobDate,
+                    organizationId
                 });
 
                 if (existingStudent) {
@@ -419,17 +416,18 @@ export const bulkAddStudents = async (req: Request, res: Response) => {
                     currentClass,
                     academicSession,
                     password: hashedPassword,
+                    organizationId,
 
                     // Use Resolved IDs
                     targetExams: targetExamIds,
                     enrolledSubjects: subjectIds,
-                    stream: streamId,
+                    stream: streamId ?? undefined,
 
                     email,
                     parentPhoneNumber,
                     isActive: true,
                     admissionDate: new Date(),
-                    enrollmentNumber: await getNextEnrollmentNumber()
+                    enrollmentNumber: await getNextEnrollmentNumber(organizationId as string)
                 });
 
                 addedStudents.push(newStudent);
@@ -464,20 +462,22 @@ export const bulkAddStudents = async (req: Request, res: Response) => {
     }
 };
 
-export const deleteStudent = async (req: Request, res: Response) => {
+export const deleteStudent = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
         if (!id) return res.status(400).json({ success: false, message: 'ID required' });
-        const deletedStudent = await Student.findByIdAndDelete(id);
+        const deletedStudent = await Student.findOneAndDelete({ _id: id, organizationId: req.user?.organizationId });
         if (!deletedStudent) return res.status(404).json({ success: false, message: 'Not found' });
         return res.status(200).json({ success: true, message: 'Student deleted', deletedStudent });
     } catch (error) {
         return res.status(500).json({ success: false, message: 'Server Error' });
     }
 };
-export const getAllActiveStudents = async (req: Request, res: Response) => {
+
+
+export const getAllActiveStudents = async (req: AuthRequest, res: Response) => {
     try {
-        const students = await Student.find({ isActive: true })
+        const students = await Student.find({ isActive: true, organizationId: req.user?.organizationId })
             .populate({
                 path: 'enrolledSubjects',
                 model: Subject,
@@ -496,7 +496,7 @@ export const getAllActiveStudents = async (req: Request, res: Response) => {
 }
 
 
-export const changePassword = async (req: Request, res: Response) => {
+export const changePassword = async (req: AuthRequest, res: Response) => {
     try {
         const { current, new: newPassword } = req.body;
         const userId = req.user?.id;
@@ -509,7 +509,7 @@ export const changePassword = async (req: Request, res: Response) => {
             return res.status(400).json({ message: "Please provide both current and new passwords." });
         }
 
-        const student = await Student.findById(userId);
+        const student = await Student.findOne({ _id: userId, organizationId: req.user?.organizationId });
 
         if (!student) {
             return res.status(404).json({ message: "User not found." });
@@ -540,35 +540,29 @@ export const changePassword = async (req: Request, res: Response) => {
     }
 };
 
-export const getStudentCount = async () => {
+export const getStudentCount = async (organizationId: string) => {
     try {
-        const count = await Student.countDocuments({});
+        const count = await Student.countDocuments({ organizationId });
         return count;
     } catch (error) {
-        return {
-            message: "Error fetching student count",
-            error
-        };
+        return { message: "Error fetching student count", error };
     }
 };
-export const getActiveStudentCount = async () => {
+export const getActiveStudentCount = async (organizationId: string) => {
     try {
-        const count = await Student.countDocuments({ isActive: true });
+        const count = await Student.countDocuments({ isActive: true, organizationId });
         return count;
     } catch (error) {
-        return {
-            message: "Error fetching active student count",
-            error
-        };
+        return { message: "Error fetching active student count", error };
     }
 };
 
-export const getAllStudentProfiles = async (req: Request, res: Response) => {
+export const getAllStudentProfiles = async (req: TenantRequest, res: Response) => {
     try {
-        const students = await Student.find({ isActive: true })
+        const students = await Student.find({ isActive: true, organizationId: req.organizationId })
             .select('enrollmentNumber profilePhoto -_id')
             .lean();
-        
+
         res.status(200).json({ success: true, data: students });
     } catch (error) {
         console.error("Error fetching student profiles:", error);

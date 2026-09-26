@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IStudent extends Document {
+  organizationId: mongoose.Types.ObjectId;
   enrollmentNumber: string;
   profilePhoto?: string;
   name: string;
@@ -20,11 +21,12 @@ export interface IStudent extends Document {
 
 const StudentSchema: Schema = new Schema({
   // Basic Identity
-  enrollmentNumber: { type: String, required: true, unique: true, index: true },
+  organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
+  enrollmentNumber: { type: String, required: true, index: true },
   profilePhoto: { type: String, default: '' },
   name: { type: String, required: true },
   dob: { type: Date, required: true },
-  phoneNumber: { type: String, required: true, unique: true, index: true },
+  phoneNumber: { type: String, required: true, index: true },
   parentPhoneNumber: { type: String },
   email: { type: String, index: true },
   password: { type: String, required: true },
@@ -64,5 +66,8 @@ const StudentSchema: Schema = new Schema({
   isActive: { type: Boolean, default: true },
 
 }, { timestamps: true });
+
+StudentSchema.index({ organizationId: 1, enrollmentNumber: 1 }, { unique: true });
+StudentSchema.index({ organizationId: 1, phoneNumber: 1 }, { unique: true });
 
 export default mongoose.model<IStudent>('Student', StudentSchema);

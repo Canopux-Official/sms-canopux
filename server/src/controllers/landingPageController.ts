@@ -1,12 +1,14 @@
 import express from 'express';
 import LandingPage from '../models/LandingPage';
 import connectDB from '../config/db';
+import { TenantRequest } from '../middlewares/resolveTenant';
+import { AuthRequest } from '../middlewares/verifyAuth';
 
 // Get Landing Page Content (Public)
-const getLandingPage = async (req: express.Request, res: express.Response): Promise<void> => {
+const getLandingPage = async (req: TenantRequest, res: express.Response): Promise<void> => {
     try {
         await connectDB();
-        const landingPage = await LandingPage.findOne();
+        const landingPage = await LandingPage.findOne({ organizationId: req.organizationId });
 
         if (!landingPage) {
             // Return empty structure matching the schema if no document exists
@@ -40,14 +42,15 @@ const getLandingPage = async (req: express.Request, res: express.Response): Prom
 };
 
 // Update or Upsert Landing Page Content (Admin)
-const updateLandingPage = async (req: express.Request, res: express.Response): Promise<void> => {
+const updateLandingPage = async (req: AuthRequest, res: express.Response): Promise<void> => {
     try {
         await connectDB();
-        const { hero, courses, faculty, results, faqs, footer, facultyStats, gallery  } = req.body;
+        const { hero, courses, faculty, results, faqs, footer, facultyStats, gallery } = req.body;
 
         const updatedLandingPage = await LandingPage.findOneAndUpdate(
-            {},
+            { organizationId: req.user?.organizationId },
             {
+                organizationId: req.user?.organizationId,
                 hero,
                 courses,
                 faculty,

@@ -73,6 +73,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IAdmin extends Document {
+  organizationId: mongoose.Types.ObjectId;
   name: string;
   phoneNumber: string;
   role: 'superadmin' | 'admin';
@@ -92,6 +93,7 @@ export interface IAdmin extends Document {
 }
 
 const AdminSchema: Schema = new Schema({
+  organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
   name: {
     type: String,
     required: true,
@@ -101,7 +103,6 @@ const AdminSchema: Schema = new Schema({
   phoneNumber: {
     type: String,
     required: true,
-    unique: true,
     // Comment: The specific phone number authorized to access the Admin Panel. 
     // Login flow checks this collection first.
   },
@@ -115,8 +116,7 @@ const AdminSchema: Schema = new Schema({
   },
   email: {
     type: String,
-    required: true,
-    unique: true,
+    required: true
     // Comment: Contact email for the admin. Used for notifications and password recovery.
   },
   password: {
@@ -136,5 +136,8 @@ const AdminSchema: Schema = new Schema({
     marks: { type: Boolean, default: false }
   }
 }, { timestamps: true });
+
+AdminSchema.index({ organizationId: 1, phoneNumber: 1 }, { unique: true });
+AdminSchema.index({ organizationId: 1, email: 1 }, { unique: true });
 
 export default mongoose.model<IAdmin>('Admin', AdminSchema);

@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IResult extends Document {
+  organizationId: mongoose.Types.ObjectId;
   testId: mongoose.Types.ObjectId;
   studentId: mongoose.Types.ObjectId;
   marksObtained: number | null;
@@ -13,6 +14,7 @@ export interface IResult extends Document {
 
 const ResultSchema: Schema = new Schema(
   {
+    organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
     testId: {
       type: Schema.Types.ObjectId,
       ref: 'Test',

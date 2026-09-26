@@ -1,15 +1,17 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IOtp extends Document {
+  organizationId: mongoose.Types.ObjectId;
   email: string;
-  otp: string;        
-  attempts: number;   
-  userId: mongoose.Types.ObjectId; 
-  onModel: 'Student' | 'Admin';     
+  otp: string;
+  attempts: number;
+  userId: mongoose.Types.ObjectId;
+  onModel: 'student' | 'admin';
   createdAt: Date;
 }
 
 const OtpSchema: Schema = new Schema({
+  organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
   email: {
     type: String,
     required: true,
