@@ -50,9 +50,10 @@ export const getAdminAttendanceView = async (req: AuthRequest, res: Response) =>
     // Build student filter based on provided parameters
     const studentFilter: any = {
       isActive: true,
-      organizationId: req.user?.organizationId,
+      organizationId: new mongoose.Types.ObjectId(req.user?.organizationId),
       admissionDate: { $lte: new Date(selectedYear, selectedMonth - 1, lastDayToShow, 23, 59, 59, 999) }
     };
+
 
     // Add currentClass filter (required - enum value, not ObjectId)
     if (!currentClass) {
