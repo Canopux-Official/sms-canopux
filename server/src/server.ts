@@ -31,6 +31,12 @@ import studentMarksRoutes from './routes/student/studentMarksRoutes';
 import landingPageController from './controllers/landingPageController';
 import resolveTenant from './middlewares/resolveTenant';
 
+
+import platformAuthRoutes from './routes/platform/platformAuthRoutes';
+import platformOrganizationRoutes from './routes/platform/organizationRoutes';
+import platformPlanRoutes from './routes/platform/planRoutes';
+
+
 // -----------------------------------------------------------------------
 // App setup
 // -----------------------------------------------------------------------
@@ -125,6 +131,15 @@ app.use('/student/marks', studentMarksRoutes);
 
 // Cron
 app.use('/api/cron', cronRoutes);
+
+
+
+// Platform (Canopux Admin App — admin.sms.canopux.org calls these under /platform/*.
+app.use('/platform/auth', platformAuthRoutes);
+app.use('/platform/organizations', platformOrganizationRoutes);
+app.use('/platform/plans', platformPlanRoutes);
+
+
 
 // -----------------------------------------------------------------------
 // Global error handler

@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "nodemon src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "seed:admin": "ts-node seedDBAdmin.ts",
+    "seed:platform-admin": "ts-node seedPlatformAdmin.ts"
   },
   "keywords": [],
   "author": "",

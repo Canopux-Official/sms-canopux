@@ -7,3 +7,10 @@ ADMIN_PHONE=
 OTP_SECRET=
 MAIL_USER= email id 
 MAIL_PASS= mail pass generated in google account settings
+
+
+
+# --- Canopux Admin App (master-admin-sms) — used only by seedPlatformAdmin.ts ---
+# Optional: if unset, the seed script defaults to platform-admin@canopux.org / ChangeMe123!
+PLATFORM_ADMIN_EMAIL=
+PLATFORM_ADMIN_PASSWORD=
