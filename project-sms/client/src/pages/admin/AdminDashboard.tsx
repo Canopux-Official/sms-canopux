@@ -162,6 +162,7 @@ import AttendanceManagement from '../../components/admin/Attendance/attendance/A
 import AdminAccessControl from './AdminAccessControl';
 import AdminLandingPage from './AdminLandingPage';
 import AdminMarks from './AdminMarks';
+import AdminBilling from './AdminBilling';
 
 const AdminDashboard: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -190,6 +191,7 @@ const AdminDashboard: React.FC = () => {
             <Route path="notice" element={<AdminNoticePage />} />
             <Route path="attendance" element={<AttendanceManagement />} />
             <Route path="marks" element={<AdminMarks />} />
+            <Route path="billing" element={<AdminBilling />} />
             <Route path="streams" element={<StreamPage />} />
             <Route path="target-exams" element={<TargetExamPage />} />
             <Route path="landing-page" element={<AdminLandingPage />} />

@@ -6,6 +6,8 @@ import { PlatformAuthProvider, usePlatformAuth } from './context/PlatformAuthCon
 import Login from './pages/Login';
 import OrganizationList from './pages/OrganizationList';
 import CreateOrganization from './pages/CreateOrganization';
+import OrganizationDetail from './pages/OrganizationDetail';
+import PlansPage from './pages/PlansPage';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated } = usePlatformAuth();
@@ -37,6 +39,22 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <CreateOrganization />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/organizations/:id"
+        element={
+          <ProtectedRoute>
+            <OrganizationDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/plans"
+        element={
+          <ProtectedRoute>
+            <PlansPage />
           </ProtectedRoute>
         }
       />

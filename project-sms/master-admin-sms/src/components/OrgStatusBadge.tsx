@@ -1,17 +1,15 @@
 import Chip, { type ChipProps } from '@mui/material/Chip';
 
-export type OrganizationStatus = 'active' | 'trial' | 'suspended' | 'cancelled';
+export type OrganizationStatus = 'active' | 'suspended' | 'cancelled';
 
 const STATUS_COLOR: Record<OrganizationStatus, ChipProps['color']> = {
   active: 'success',
-  trial: 'info',
   suspended: 'error',
   cancelled: 'default',
 };
 
 const STATUS_LABEL: Record<OrganizationStatus, string> = {
   active: 'Active',
-  trial: 'Trial',
   suspended: 'Suspended',
   cancelled: 'Cancelled',
 };
