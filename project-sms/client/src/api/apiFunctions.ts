@@ -622,3 +622,119 @@ export async function getStudentNotices(): Promise<ApiResponse> {
 // --- LANDING PAGE APIs ---
 export const getLandingPage = () => crudRequest('get', '/landingPage');
 export const updateLandingPage = (data: unknown) => crudRequest('post', '/admin/landingPage/update', data);
+
+
+
+
+
+
+
+// --- BILLING APIs (superadmin only — see server/src/controllers/billingController.ts) ---
+
+export interface BillingSubscription {
+  id: string;
+  planId: string | null;
+  planName: string;
+  planDescription: string;
+  maxStudents: number | null;
+  durationDays: number;
+  oneTimePrice: number;
+  monthlyMaintenance: number;
+  maintenanceMonths: number;
+  startDate: string;
+  endDate: string;
+  status: 'active' | 'replaced' | 'cancelled';
+  state: 'active' | 'expiring_soon' | 'expired' | 'replaced' | 'cancelled';
+  totalDays: number;
+  elapsedDays: number;
+  daysRemaining: number;
+  progressPercent: number;
+  pricing: {
+    subtotal: number; discountPercent: number; discountAmount: number;
+    taxPercent: number; taxAmount: number; total: number; currency: string;
+  };
+  notes: string;
+}
+
+export interface BillingMonthlyRow {
+  month: string;
+  label: string;
+  isCurrent: boolean;
+  plans: string[];
+  invoiced: number;
+  paid: number;
+}
+
+export interface BillingSummary {
+  currentSubscription: BillingSubscription | null;
+  subscriptions: BillingSubscription[];
+  monthly: BillingMonthlyRow[];
+  invoiceSummary: { count: number; totalInvoiced: number; totalPaid: number; outstanding: number; upcoming?: number; balance?: number; overdueCount: number };
+}
+
+export async function getBillingSummary(): Promise<ApiResponse<BillingSummary>> {
+  try {
+    const config: AxiosRequestConfig = {
+      method: 'get',
+      url: `${import.meta.env.VITE_SERVER_LINK}/admin/billing/summary`,
+      headers: getAuthHeaders(),
+    };
+    const response = await axios(config);
+    return { success: true, data: response.data, status: response.status };
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    // @ts-expect-error response.data is not typed
+    return { success: false, status: axiosError.response?.status, message: axiosError.response?.data?.message || 'Failed to fetch billing summary' };
+  }
+}
+
+export interface BillingInvoice {
+  id: string;
+  invoiceNumber: string;
+  status: 'draft' | 'issued' | 'paid' | 'void';
+  issueDate: string;
+  dueDate: string | null;
+  paidAt: string | null;
+  total: number;
+  currency: string;
+}
+
+export async function getMyInvoices(): Promise<ApiResponse<BillingInvoice[]>> {
+  try {
+    const config: AxiosRequestConfig = {
+      method: 'get',
+      url: `${import.meta.env.VITE_SERVER_LINK}/admin/billing/invoices`,
+      headers: getAuthHeaders(),
+    };
+    const response = await axios(config);
+    return { success: true, data: response.data.invoices, status: response.status };
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    // @ts-expect-error response.data is not typed
+    return { success: false, status: axiosError.response?.status, message: axiosError.response?.data?.message || 'Failed to fetch invoices' };
+  }
+}
+
+/** Downloads an invoice PDF and triggers a browser save — a plain <a href> can't carry the auth header. */
+export async function downloadMyInvoicePdf(id: string, filename: string): Promise<ApiResponse<null>> {
+  try {
+    const response = await axios({
+      method: 'get',
+      url: `${import.meta.env.VITE_SERVER_LINK}/admin/billing/invoices/${id}/pdf`,
+      headers: getAuthHeaders(),
+      responseType: 'blob',
+    });
+    const blobUrl = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = `${filename}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(blobUrl);
+    return { success: true, data: null, status: response.status };
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    return { success: false, status: axiosError.response?.status, message: 'Failed to download invoice PDF' };
+  }
+}

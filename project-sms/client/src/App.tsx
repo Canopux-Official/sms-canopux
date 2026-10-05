@@ -18,6 +18,7 @@ const queryClient = new QueryClient({
 // Import Pages
 import LandingPage from './pages/landing/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
+import ImpersonateBridge from './pages/auth/ImpersonateBridge';
 
 // Import Dashboard Layouts
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -93,6 +94,9 @@ function AppLayout() {
       <Routes>
         {/* Public Routes (Non-LandingPage) */}
         <Route path="/login" element={<LoginPage />} />
+        
+        {/* Landing spot for "Login as Superadmin" */}
+        <Route path="/admin/impersonate" element={<ImpersonateBridge />} />
 
         {/* 🔒 Protected Routes */}
         <Route

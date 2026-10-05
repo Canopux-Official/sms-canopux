@@ -32,6 +32,7 @@
     "mongoose": "^9.0.2",
     "nodemailer": "^7.0.12",
     "otplib": "^12.0.1",
+    "pdfkit": "^0.20.2",
     "rate-limit-redis": "^6.0.1",
     "redis": "^6.3.0"
   },
@@ -46,6 +47,7 @@
     "@types/mongoose": "^5.11.96",
     "@types/node": "^25.0.3",
     "@types/nodemailer": "^7.0.4",
+    "@types/pdfkit": "^0.17.6",
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"

@@ -408,6 +408,7 @@ import PushPinIcon from '@mui/icons-material/PushPin';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import LanguageIcon from '@mui/icons-material/Language';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 
 import { getAdminProfile } from '../../api/apiFunctions';
 import { LogoContainer, drawerPaperStyles } from './AdminSidebar.styles';
@@ -455,6 +456,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ mobileOpen, handleDrawerTog
   ];
 
   if (role === 'superadmin') {
+    allMenuItems.push({
+      text: 'Billing & Plan', icon: <ReceiptLongIcon />, path: '/admin/billing', permissionKey: null,
+    });
     allMenuItems.push({
       text: 'Admin Access Control', icon: <VpnKeyIcon />, path: '/admin/control', permissionKey: null,
     });

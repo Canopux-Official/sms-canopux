@@ -35,7 +35,8 @@ import resolveTenant from './middlewares/resolveTenant';
 import platformAuthRoutes from './routes/platform/platformAuthRoutes';
 import platformOrganizationRoutes from './routes/platform/organizationRoutes';
 import platformPlanRoutes from './routes/platform/planRoutes';
-
+import platformInvoiceRoutes from './routes/platform/invoiceRoutes';
+import adminBillingRoutes from './routes/admin/admin.billingRoutes';
 
 // -----------------------------------------------------------------------
 // App setup
@@ -156,7 +157,10 @@ app.use('/api/cron', cronRoutes);
 app.use('/platform/auth', platformAuthRoutes);
 app.use('/platform/organizations', platformOrganizationRoutes);
 app.use('/platform/plans', platformPlanRoutes);
+app.use('/platform/invoices', platformInvoiceRoutes);
 
+// Institute's own read-only view of its plan/subscription/invoice history (superadmin only).
+app.use('/admin/billing', adminBillingRoutes);
 
 
 // -----------------------------------------------------------------------
