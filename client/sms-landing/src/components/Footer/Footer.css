@@ -1,0 +1,15 @@
+.lp-footer { background:#0B1220;padding:4rem 0 2rem;border-top:1px solid rgba(255,255,255,.06); }
+.footer-grid { display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:2.75rem;margin-bottom:2.75rem; }
+.footer-brand p { font-size:.775rem;color:rgba(255,255,255,.4);line-height:1.7;margin-top:.75rem;max-width:250px; }
+.footer-logo { display:flex;align-items:center;gap:.55rem; }
+.footer-logo-icon { width:30px;height:30px;background:linear-gradient(135deg,var(--primary),var(--accent));border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:800;color:#fff;font-family:'Manrope',sans-serif; }
+.footer-logo-text { font-family:'Manrope',sans-serif;font-weight:800;font-size:.95rem;color:#fff; }
+.footer-logo-text span { color:var(--accent); }
+.footer-col h4 { font-size:.7rem;font-weight:700;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1.125rem; }
+.footer-links { list-style:none;display:flex;flex-direction:column;gap:.55rem; }
+.footer-links a { font-size:.775rem;color:rgba(255,255,255,.4);text-decoration:none;transition:color .2s ease; }
+.footer-links a:hover { color:rgba(255,255,255,.8); }
+.footer-bottom { display:flex;align-items:center;justify-content:space-between;padding-top:1.875rem;border-top:1px solid rgba(255,255,255,.06);font-size:.72rem;color:rgba(255,255,255,.28);gap:1rem;flex-wrap:wrap; }
+.footer-bottom-links { display:flex;gap:1.375rem; }
+.footer-bottom-links a { color:rgba(255,255,255,.3);text-decoration:none;font-size:.72rem;transition:color .2s ease; }
+.footer-bottom-links a:hover { color:rgba(255,255,255,.65); }

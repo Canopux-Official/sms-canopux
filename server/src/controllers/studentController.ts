@@ -39,22 +39,67 @@ const getTargetExamIds = async (examNames: string | string[], organizationId?: s
     return exams.map(e => e._id);
 };
 
-// Helper: Get Next Enrollment Number
-//here i need to add the slug of the organization
+import Organization from '../models/Organization';
+
 const getNextEnrollmentNumber = async (organizationId: string) => {
+    // 1. Fetch organization to get the slug for the prefix
+    const org = await Organization.findById(organizationId);
+    let prefix = 'STU'; // Default fallback
+    if (org && org.slug) {
+        prefix = org.slug.substring(0, 3).toUpperCase();
+    }
+
+    // 2. Increment counter safely per-organization
     const counter = await Counter.findByIdAndUpdate(
         `enrollmentNumber_${organizationId}`,
         { $inc: { sequence_value: 1 } },
         { new: true, upsert: true }
     );
+    
     const seq = counter.sequence_value;
-    return `JIS${String(seq).padStart(7, '0')}`;
+    return `${prefix}${String(seq).padStart(7, '0')}`;
 };
 
 // --- READ ---
 export const getAllStudents = async (req: AuthRequest, res: Response) => {
     try {
-        const students = await Student.find({ organizationId: req.user?.organizationId })
+        const { page, limit, search, currentClass, stream, targetExams, isActive } = req.query;
+        
+        const filterQuery: any = { organizationId: req.user?.organizationId };
+
+        if (search) {
+            filterQuery.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { enrollmentNumber: { $regex: search, $options: 'i' } },
+                { phoneNumber: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        if (currentClass) {
+            filterQuery.currentClass = currentClass;
+        }
+
+        if (stream) {
+            const streamId = await getStreamId(stream as string, req.user?.organizationId);
+            if (streamId) {
+                filterQuery.stream = streamId;
+            }
+        }
+
+        if (targetExams) {
+            const examsArr = (targetExams as string).split(',');
+            const targetExamIds = await getTargetExamIds(examsArr, req.user?.organizationId);
+            if (targetExamIds.length > 0) {
+                filterQuery.targetExams = { $in: targetExamIds };
+            }
+        }
+
+        if (isActive !== undefined && isActive !== '') {
+            filterQuery.isActive = isActive === 'true';
+        }
+
+        let query = Student.find(filterQuery)
             .populate({
                 path: 'enrolledSubjects',
                 model: Subject,
@@ -65,7 +110,23 @@ export const getAllStudents = async (req: AuthRequest, res: Response) => {
             .select('-password -createdAt -updatedAt')
             .sort({ admissionDate: -1 });
 
-        res.status(200).json(students);
+        if (page && limit) {
+            const pageNum = parseInt(page as string, 10);
+            const limitNum = parseInt(limit as string, 10);
+            query = query.skip((pageNum - 1) * limitNum).limit(limitNum);
+            
+            const total = await Student.countDocuments(filterQuery);
+            const students = await query.exec();
+            
+            return res.status(200).json({ 
+                success: true,
+                data: students, 
+                pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) } 
+            });
+        }
+
+        const students = await query.exec();
+        res.status(200).json({ success: true, data: students });
     } catch (error) {
         console.error("Error fetching students:", error);
         res.status(500).json({ message: 'Error fetching students' });
@@ -477,7 +538,8 @@ export const deleteStudent = async (req: AuthRequest, res: Response) => {
 
 export const getAllActiveStudents = async (req: AuthRequest, res: Response) => {
     try {
-        const students = await Student.find({ isActive: true, organizationId: req.user?.organizationId })
+        const { page, limit } = req.query;
+        let query = Student.find({ isActive: true, organizationId: req.user?.organizationId })
             .populate({
                 path: 'enrolledSubjects',
                 model: Subject,
@@ -488,6 +550,21 @@ export const getAllActiveStudents = async (req: AuthRequest, res: Response) => {
             .select('-password -createdAt -updatedAt')
             .sort({ admissionDate: -1 });
 
+        if (page && limit) {
+            const pageNum = parseInt(page as string, 10);
+            const limitNum = parseInt(limit as string, 10);
+            query = query.skip((pageNum - 1) * limitNum).limit(limitNum);
+            
+            const total = await Student.countDocuments({ isActive: true, organizationId: req.user?.organizationId });
+            const students = await query.exec();
+            
+            return res.status(200).json({ 
+                data: students, 
+                pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) } 
+            });
+        }
+
+        const students = await query.exec();
         res.status(200).json(students);
     } catch (error) {
         console.error("Error fetching students:", error);

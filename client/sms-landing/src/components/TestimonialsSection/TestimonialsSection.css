@@ -1,0 +1,94 @@
+.lp-testimonials { padding: 7rem 0; background: #fff; }
+.testimonials-header { text-align: center; margin-bottom: 3.5rem; }
+
+.testimonials-carousel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.carousel-viewport {
+  flex: 1;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  padding: 1rem 0;
+}
+
+.carousel-track {
+  display: flex;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.carousel-slide {
+  flex: 0 0 100%;
+  padding: 0 1rem;
+}
+
+.carousel-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--slate-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--slate);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.carousel-btn:hover {
+  background: var(--soft-blue);
+  color: var(--primary);
+  border-color: rgba(37,99,235,0.3);
+  transform: scale(1.05);
+}
+
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 2rem;
+}
+
+.carousel-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--slate-200);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.carousel-dot.active {
+  background: var(--primary);
+  width: 24px;
+  border-radius: 100px;
+}
+
+.testimonial-card {
+  background: #fff; border-radius: var(--radius-lg); padding: 2.5rem;
+  border: 1px solid var(--slate-200); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+  display: flex; flex-direction: column; justify-content: center;
+  min-height: 250px; text-align: center;
+}
+.t-stars { color: #F59E0B; font-size: 1.1rem; letter-spacing: 2px; margin-bottom: 1.25rem; }
+.t-text { font-size: 1.125rem; color: var(--dark); line-height: 1.75; font-style: italic; margin-bottom: 2rem; font-family: 'Manrope', sans-serif; font-weight: 500;}
+.t-author { display: flex; align-items: center; justify-content: center; gap: 0.75rem; }
+.t-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 0.9rem; }
+.t-name { font-weight: 700; color: var(--dark); font-size: 0.95rem; text-align: left; }
+.t-role { font-size: 0.8rem; color: var(--slate); text-align: left; }
+
+@media (max-width: 768px) {
+  .carousel-btn { display: none; }
+  .testimonial-card { padding: 1.5rem; min-height: auto; }
+  .t-text { font-size: 1rem; }
+}

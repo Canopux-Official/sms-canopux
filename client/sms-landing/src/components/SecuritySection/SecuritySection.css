@@ -1,0 +1,11 @@
+.lp-security { padding:7rem 0;background:#F8FAFC; }
+.security-grid { display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center; }
+.security-visual { background:linear-gradient(135deg,var(--navy) 0%,#1E293B 100%);border-radius:var(--radius-xl);padding:2.25rem;position:relative;overflow:hidden; }
+.security-visual::before { content:'';position:absolute;inset:0;background:radial-gradient(ellipse at top right,rgba(56,189,248,.12) 0%,transparent 60%); }
+.sec-layers { display:flex;flex-direction:column;gap:.55rem;position:relative;z-index:1; }
+.sec-layer { display:flex;align-items:center;gap:.75rem;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-md);padding:.75rem .875rem;transition:all .2s ease; }
+.sec-layer:hover { background:rgba(255,255,255,.09);border-color:rgba(56,189,248,.3); }
+.sec-layer-icon { width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,rgba(37,99,235,.6),rgba(56,189,248,.6));display:flex;align-items:center;justify-content:center;font-size:.825rem;flex-shrink:0; }
+.sec-layer-title { font-size:.775rem;font-weight:700;color:#fff;margin-bottom:.1rem; }
+.sec-layer-desc { font-size:.665rem;color:rgba(255,255,255,.45); }
+.sec-badge { display:inline-flex;align-items:center;gap:.35rem;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);color:var(--success);font-size:.68rem;font-weight:700;padding:.28rem .7rem;border-radius:100px;margin-bottom:.875rem; }

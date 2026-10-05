@@ -56,6 +56,8 @@ app.use(compression());
 //   })
 // );
 
+import cookieParser from 'cookie-parser';
+
 app.use(cors({
   origin: (origin: any, callback: any) => {
     const allowed = /^https:\/\/([a-z0-9-]+\.)?sms\.canopux\.org$/;
@@ -64,11 +66,24 @@ app.use(cors({
     } else {
       callback(new Error('Not allowed by CORS'));
     }
-  }
+  },
+  credentials: true
 }));
+
+app.use(cookieParser());
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+import { createClient } from 'redis';
+import { RedisStore } from 'rate-limit-redis';
+
+// Initialize Redis Client
+const redisClient = process.env.REDIS_URL ? createClient({ url: process.env.REDIS_URL }) : null;
+
+if (redisClient) {
+  redisClient.connect().catch(console.error);
+}
 
 // Rate limiter
 app.use(
@@ -77,6 +92,9 @@ app.use(
     max: 500,
     standardHeaders: true,
     legacyHeaders: false,
+    store: redisClient ? new RedisStore({
+      sendCommand: (...args: string[]) => redisClient.sendCommand(args),
+    }) : undefined, // Fallbacks to memory if no Redis
     keyGenerator: (req: any) => req.organizationId ? String(req.organizationId) : ipKeyGenerator(req.ip),
     message: { success: false, error: 'Too many requests. Please try again later.' },
   })

@@ -50,6 +50,7 @@ import {
 } from '../../api/apiFunctions';
 
 import { uploadImageToCloudinary } from '../landing_new/service/cloudinary_service';
+import { getCurrentAcademicSession } from '../../utils/session';
 
 // --- Interfaces ---
 
@@ -125,8 +126,16 @@ const StudentsPage: React.FC = () => {
 
   // Queries
   const { data: studentsResponse, isLoading: studentsLoading } = useQuery({
-    queryKey: ['students'],
-    queryFn: getStudents
+    queryKey: ['students', page, rowsPerPage, searchTerm, classFilter, streamFilter, examFilter, statusFilter],
+    queryFn: () => getStudents({
+      page: page + 1,
+      limit: rowsPerPage,
+      search: searchTerm,
+      currentClass: classFilter,
+      stream: streamFilter,
+      targetExams: examFilter,
+      isActive: statusFilter
+    }),
   });
 
   const { data: subjectsResponse, isLoading: subjectsLoading } = useQuery({
@@ -145,9 +154,11 @@ const StudentsPage: React.FC = () => {
   });
 
   // Derived Native State
-  const students = useMemo(() =>
+  const paginatedStudents = useMemo(() =>
     studentsResponse?.success ? (studentsResponse.data as IStudentUI[]) : [],
     [studentsResponse]);
+    
+  const totalStudents = studentsResponse?.pagination?.total || 0;
 
   const subjectOptions = useMemo(() => {
     const data = subjectsResponse?.data as { subjects: INamedEntity[] } | undefined;
@@ -169,7 +180,7 @@ const StudentsPage: React.FC = () => {
   const [formData, setFormData] = useState<IStudentFormData>({
     name: '', phoneNumber: '', parentPhoneNumber: '', email: '', dob: '',
     currentClass: '', stream: '', targetExams: [], enrolledSubjects: [],
-    academicSession: '2024-2025', isActive: true, password: '', profilePhoto: ''
+    academicSession: getCurrentAcademicSession(), isActive: true, password: '', profilePhoto: ''
   });
 
   // Check if Stream is applicable (Class 11, 12, or Droppers)
@@ -402,40 +413,6 @@ const StudentsPage: React.FC = () => {
 
   // --- Filtering & Pagination ---
 
-  const filteredStudents = students.filter((student) => {
-    const term = searchTerm.toLowerCase();
-
-    // 1. Search (Name/Phone/Email/Enrollment Number)
-    const matchesSearch =
-      student.name.toLowerCase().includes(term) ||
-      student.phoneNumber.includes(term) ||
-      (student.email && student.email.toLowerCase().includes(term)) ||
-      (student.enrollmentNumber && student.enrollmentNumber.toLowerCase().includes(term));
-
-    // 2. Class Filter
-    const matchesClass = classFilter === 'All' || student.currentClass === classFilter;
-
-    // 3. Exam Filter
-    const matchesExam = examFilter.length === 0 || examFilter.some(filter =>
-      student.targetExams.some(t => t.name === filter)
-    );
-
-    // 4. Status Filter
-    const matchesStatus = statusFilter === 'All' || (statusFilter === 'Active' ? student.isActive : !student.isActive);
-
-    // 5. Stream Filter (New)
-    const matchesStream = streamFilter === 'All' || (student.stream?.name === streamFilter);
-
-    // 6. Subject Filter (New - OR logic: student has any of the selected subjects)
-    const matchesSubject = subjectFilter.length === 0 || subjectFilter.some(filter =>
-      student.enrolledSubjects.some(sub => sub.name === filter)
-    );
-
-    return matchesSearch && matchesClass && matchesExam && matchesStatus && matchesStream && matchesSubject;
-  });
-
-  const paginatedStudents = filteredStudents.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-
   const handleResetFilters = () => {
     setClassFilter('All');
     setStreamFilter('All');
@@ -443,6 +420,7 @@ const StudentsPage: React.FC = () => {
     setSubjectFilter([]);
     setStatusFilter('All');
     setSearchTerm('');
+    setPage(0);
   };
 
   return (
@@ -643,7 +621,7 @@ const StudentsPage: React.FC = () => {
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={filteredStudents.length}
+          count={totalStudents}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={(_, p) => setPage(p)}

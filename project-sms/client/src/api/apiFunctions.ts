@@ -3,6 +3,41 @@ import axios, { AxiosError, type AxiosRequestConfig } from 'axios';
 import { getAuthHeaders } from '../utils/authHeader';
 import { getOrgSlug } from '../utils/tenant';
 
+// Globally ensure cookies are sent
+axios.defaults.withCredentials = true;
+
+// --- Token Refresh Interceptor ---
+axios.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response && (error.response.status === 401 || error.response.status === 403) && !originalRequest._retry) {
+      // Prevent infinite loops if the refresh endpoint itself fails
+      if (originalRequest.url.includes('/auth/refresh')) {
+        return Promise.reject(error);
+      }
+      
+      originalRequest._retry = true;
+      try {
+        // Attempt to get a new access token
+        const rs = await axios.post(`${import.meta.env.VITE_SERVER_LINK}/auth/refresh`, {}, { withCredentials: true });
+        const { authToken } = rs.data;
+        if (authToken) {
+          window.localStorage.setItem('authToken', authToken);
+          // Re-attempt the original request with the new token
+          originalRequest.headers['Authorization'] = `Bearer ${authToken}`;
+          return axios(originalRequest);
+        }
+      } catch (_error) {
+        // If refresh fails, clear token to force a re-login
+        window.localStorage.removeItem('authToken');
+        return Promise.reject(_error);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // --- Type Definitions ---
 
 interface LoginPayload {
@@ -40,6 +75,7 @@ interface ApiResponse<T = unknown> {
   admins?: unknown[];
   admin?: unknown;
   error?: unknown;
+  pagination?: any;
 }
 
 // --- Helper Functions ---
@@ -208,6 +244,14 @@ export async function validateToken(): Promise<{ isValid: boolean; role?: string
   }
 }
 
+export async function logoutUser(): Promise<void> {
+  try {
+    await axios.post(`${import.meta.env.VITE_SERVER_LINK}/auth/logout`, {}, { withCredentials: true });
+  } catch (error) {
+    console.error('Error logging out on server:', error);
+  }
+}
+
 export async function getAdminProfile(): Promise<ApiResponse> {
   try {
     const config: AxiosRequestConfig = {
@@ -224,11 +268,41 @@ export async function getAdminProfile(): Promise<ApiResponse> {
     return { success: false, message: "Network error" };
   }
 }
-export async function getStudents(): Promise<ApiResponse> {
+export interface GetStudentsParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  currentClass?: string;
+  stream?: string;
+  targetExams?: string[];
+  isActive?: string; // 'true', 'false', or ''
+}
+
+export async function getStudents(params?: GetStudentsParams): Promise<ApiResponse> {
   try {
+    let url = `${import.meta.env.VITE_SERVER_LINK}/admin/studentControl/getAllStudents`;
+    
+    if (params) {
+      const queryParams = new URLSearchParams();
+      if (params.page) queryParams.append('page', params.page.toString());
+      if (params.limit) queryParams.append('limit', params.limit.toString());
+      if (params.search) queryParams.append('search', params.search);
+      if (params.currentClass && params.currentClass !== 'All') queryParams.append('currentClass', params.currentClass);
+      if (params.stream && params.stream !== 'All') queryParams.append('stream', params.stream);
+      if (params.targetExams && params.targetExams.length > 0) queryParams.append('targetExams', params.targetExams.join(','));
+      if (params.isActive && params.isActive !== 'All') {
+          queryParams.append('isActive', params.isActive === 'Active' ? 'true' : 'false');
+      }
+      
+      const queryString = queryParams.toString();
+      if (queryString) {
+        url += `?${queryString}`;
+      }
+    }
+
     const config: AxiosRequestConfig = {
       method: "get",
-      url: `${import.meta.env.VITE_SERVER_LINK}/admin/studentControl/getAllStudents`,
+      url,
       headers: getAuthHeaders()
     };
     const response = await axios(config);
@@ -236,7 +310,8 @@ export async function getStudents(): Promise<ApiResponse> {
     if (response.status === 200) {
       return {
         success: true,
-        data: response.data,
+        data: response.data.data ? response.data.data : response.data,
+        pagination: response.data.pagination,
         status: response.status
       };
     }

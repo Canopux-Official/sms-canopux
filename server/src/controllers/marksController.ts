@@ -75,7 +75,7 @@ export const getAllTests = async (req: AuthRequest, res: Response) => {
 
     // Progress counts (how many students assigned / how many marks entered) shown in the list
     const counts = await Result.aggregate([
-      { $match: { testId: { $in: testIds } } },
+      { $match: { testId: { $in: testIds }, organizationId: new mongoose.Types.ObjectId(req.user?.organizationId) } },
       {
         $group: {
           _id: '$testId',
@@ -187,7 +187,7 @@ export const deleteTest = async (req: AuthRequest, res: Response) => {
     const test = await Test.findOneAndDelete({ _id: id, organizationId: req.user?.organizationId });
     if (!test) return res.status(404).json({ success: false, message: 'Test not found' });
 
-    await Result.deleteMany({ testId: id });
+    await Result.deleteMany({ testId: id, organizationId: req.user?.organizationId });
 
     return res.status(200).json({ success: true, message: 'Test and its results deleted successfully' });
   } catch (error: any) {
@@ -230,7 +230,7 @@ export const getEligibleStudents = async (req: AuthRequest, res: Response) => {
       .sort({ name: 1 })
       .lean();
 
-    const existingResults = await Result.find({ testId: id }).select('studentId').lean();
+    const existingResults = await Result.find({ testId: id, organizationId: req.user?.organizationId }).select('studentId').lean();
     const assignedIds = new Set(existingResults.map((r) => r.studentId.toString()));
 
     const data = students.map((s: any) => ({
@@ -274,7 +274,7 @@ export const assignStudents = async (req: AuthRequest, res: Response) => {
 
     const validStudentIds = studentIds.filter((sid: string) => isValidObjectId(sid));
 
-    const existing = await Result.find({ testId: id }).select('studentId').lean();
+    const existing = await Result.find({ testId: id, organizationId: req.user?.organizationId }).select('studentId').lean();
     const existingIds = new Set(existing.map((r) => r.studentId.toString()));
     const desiredIds = new Set(validStudentIds.map(String));
 
@@ -295,7 +295,7 @@ export const assignStudents = async (req: AuthRequest, res: Response) => {
     }
 
     if (toRemove.length > 0) {
-      await Result.deleteMany({ testId: id, studentId: { $in: toRemove } });
+      await Result.deleteMany({ testId: id, studentId: { $in: toRemove }, organizationId: req.user?.organizationId });
     }
 
     if (test.status === 'draft' && desiredIds.size > 0) {
@@ -328,7 +328,7 @@ export const getMarksEntry = async (req: AuthRequest, res: Response) => {
     const test = await Test.findOne({ _id: id, organizationId: req.user?.organizationId }).populate('stream', 'name').populate('targetExam', 'name');
     if (!test) return res.status(404).json({ success: false, message: 'Test not found' });
 
-    const results = await Result.find({ testId: id })
+    const results = await Result.find({ testId: id, organizationId: req.user?.organizationId })
       .populate('studentId', 'name enrollmentNumber phoneNumber')
       .lean();
 
@@ -396,7 +396,7 @@ export const saveMarksEntry = async (req: AuthRequest, res: Response) => {
 
       bulkOps.push({
         updateOne: {
-          filter: { testId: id, studentId },
+          filter: { testId: id, studentId, organizationId: req.user?.organizationId },
           update: { $set: { marksObtained: marks, isAbsent: !!isAbsent } }
         }
       });
@@ -450,7 +450,7 @@ export const publishTest = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const results = await Result.find({ testId: id });
+    const results = await Result.find({ testId: id, organizationId: req.user?.organizationId });
     if (results.length === 0) {
       return res.status(400).json({ success: false, message: 'No students assigned to this test yet' });
     }
@@ -545,7 +545,7 @@ export const getStudentMarks = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    const results = await Result.find({ studentId })
+    const results = await Result.find({ studentId, organizationId: req.user?.organizationId })
       .populate({
         path: 'testId',
         match: { status: 'published' },
@@ -564,11 +564,11 @@ export const getStudentMarks = async (req: AuthRequest, res: Response) => {
       publishedResults.map(async (r: any) => {
         const test = r.testId;
 
-        const classResults = await Result.find({ testId: test._id, isAbsent: false })
+        const classResults = await Result.find({ testId: test._id, isAbsent: false, organizationId: req.user?.organizationId })
           .select('marksObtained')
           .lean();
 
-        const absentCount = await Result.countDocuments({ testId: test._id, isAbsent: true });
+        const absentCount = await Result.countDocuments({ testId: test._id, isAbsent: true, organizationId: req.user?.organizationId });
 
         const marksArr = classResults
           .map((cr: any) => cr.marksObtained)

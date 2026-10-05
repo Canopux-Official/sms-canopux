@@ -87,10 +87,17 @@ const calculateNextClass = (currentClass: string, action: PromotionStatus): stri
   }
 };
 
+import { getCurrentAcademicSession } from '../../utils/session';
+
+const getNextAcademicSession = (currentSession: string) => {
+  const [start, end] = currentSession.split('-').map(Number);
+  return `${start + 1}-${end + 1}`;
+};
+
 const SessionPage: React.FC = () => {
   // --- State ---
-  const [fromSession, setFromSession] = useState('2024-2025');
-  const [toSession, setToSession] = useState('2025-2026');
+  const [fromSession, setFromSession] = useState(getCurrentAcademicSession());
+  const [toSession, setToSession] = useState(getNextAcademicSession(getCurrentAcademicSession()));
 
   // Validation State for UI feedback
   const [sessionErrors, setSessionErrors] = useState<{ from?: string; to?: string }>({});

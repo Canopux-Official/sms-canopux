@@ -1,7 +1,6 @@
 // services/RecentMaterialsService.ts
 
 import axios from 'axios';
-import { getOrgSlug } from '../../../../utils/tenant';
 import { getAuthHeaders } from '../../../../utils/authHeader';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_LINK || "http://localhost:3000";

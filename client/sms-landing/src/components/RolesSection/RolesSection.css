@@ -1,0 +1,23 @@
+.lp-roles { padding:7rem 0; background:#fff; }
+.roles-header { text-align:center; margin-bottom:2.5rem; }
+.role-tabs { display:flex;justify-content:center;gap:.4rem;margin-bottom:2.5rem;background:var(--soft-blue);border-radius:100px;padding:.3rem;width:fit-content;margin-left:auto;margin-right:auto; }
+.role-tab { padding:.55rem 1.375rem;border-radius:100px;font-size:.825rem;font-weight:600;border:none;cursor:pointer;transition:all .25s ease;font-family:'Inter',sans-serif;color:var(--slate);background:transparent; }
+.role-tab.active { background:var(--primary);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.3); }
+.role-content { display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center; }
+.role-info h3 { font-family:'Manrope',sans-serif;font-size:1.75rem;font-weight:800;color:var(--dark);margin-bottom:.75rem;letter-spacing:-.02em; }
+.role-info p { font-size:.95rem;color:var(--slate);line-height:1.75;margin-bottom:1.375rem; }
+.role-feats { list-style:none;display:flex;flex-direction:column;gap:.5rem; }
+.role-feat { display:flex;align-items:center;gap:.5rem;font-size:.825rem;font-weight:500;color:var(--dark); }
+.role-feat::before { content:'✓';width:18px;height:18px;border-radius:50%;background:rgba(16,185,129,.1);color:var(--success);font-size:.65rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+.role-mockup { background:#F8FAFC;border-radius:var(--radius-xl);padding:1.375rem;border:1px solid var(--slate-200); }
+.role-mock-head { display:flex;align-items:center;justify-content:space-between;margin-bottom:1.125rem; }
+.role-mock-title { font-family:'Manrope',sans-serif;font-size:.825rem;font-weight:700;color:var(--dark); }
+.role-mock-badge { font-size:.62rem;font-weight:700;color:var(--success);background:rgba(16,185,129,.1);padding:.18rem .45rem;border-radius:4px; }
+.role-stats-row { display:grid;grid-template-columns:repeat(3,1fr);gap:.625rem;margin-bottom:.625rem; }
+.role-stat { background:#fff;border-radius:var(--radius-sm);padding:.75rem;text-align:center;border:1px solid var(--slate-200); }
+.role-stat-val { font-family:'Manrope',sans-serif;font-size:1.125rem;font-weight:800;color:var(--dark); }
+.role-stat-lbl { font-size:.58rem;color:var(--slate-400);font-weight:500;text-transform:uppercase;letter-spacing:.05em; }
+.role-mini-list { list-style:none;display:flex;flex-direction:column;gap:.35rem;background:#fff;border-radius:var(--radius-sm);padding:.75rem;border:1px solid var(--slate-200); }
+.role-mini-item { display:flex;align-items:center;gap:.5rem;font-size:.7rem;color:var(--dark);font-weight:500;padding:.3rem 0;border-bottom:1px solid #F1F5F9; }
+.role-mini-item:last-child{border-bottom:none;}
+.role-mini-icon{font-size:.875rem;}

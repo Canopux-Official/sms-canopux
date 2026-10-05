@@ -2,6 +2,8 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import Student from '../../models/Student';
 import Admin from '../../models/Admin';
+import Session from '../../models/Session'; // Session tracking
+
 // Added resendOtp to imports
 import { sendOtp, verifyOtp, resendOtp } from '../../controllers/otpController';
 import { changePassword, getAllStudentProfiles } from '../../controllers/studentController';
@@ -72,11 +74,35 @@ router.post('/getLoggedInUser', resolveTenant, async (req: TenantRequest, res): 
 
         // Case A: No Email -> Immediate Login
         if (!student.email) {
+            const payload = { id: student._id, role: "student", organizationId: student.organizationId, currentClass: student.currentClass };
             const authToken = jwt.sign(
-                { id: student._id, role: "student", organizationId: student.organizationId, currentClass: student.currentClass },
+                payload,
                 jwt_secret,
-                { expiresIn: '30d' }
+                { expiresIn: '15m' }
             );
+            const refreshToken = jwt.sign(
+                payload,
+                jwt_secret,
+                { expiresIn: '7d' }
+            );
+
+            res.cookie('refreshToken', refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+            });
+
+            // Store session
+            await Session.create({
+                userId: student._id,
+                userType: 'Student',
+                organizationId: student.organizationId,
+                refreshToken: refreshToken,
+                userAgent: req.headers['user-agent'] || 'unknown',
+                ipAddress: req.ip || req.socket?.remoteAddress || 'unknown',
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+            });
 
             return res.status(200).json({
                 success: true,
@@ -157,8 +183,32 @@ router.post('/verifyOtp', resolveTenant, async (req: TenantRequest, res): Promis
             const authToken = jwt.sign(
                 payload,
                 jwt_secret as string,
-                { expiresIn: '30d' }
+                { expiresIn: '15m' }
             );
+            
+            const refreshToken = jwt.sign(
+                payload,
+                jwt_secret as string,
+                { expiresIn: '7d' }
+            );
+
+            res.cookie('refreshToken', refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict',
+                maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+            });
+
+            // Store session
+            await Session.create({
+                userId: user._id,
+                userType: (userRole === "admin" || userRole === "superadmin") ? 'Admin' : 'Student',
+                organizationId: user.organizationId,
+                refreshToken: refreshToken,
+                userAgent: req.headers['user-agent'] || 'unknown',
+                ipAddress: req.ip || req.socket?.remoteAddress || 'unknown',
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+            });
 
             return res.status(200).json({
                 success: true,
@@ -213,5 +263,44 @@ router.get('/verifyToken', verifyAuth, async (req: AuthRequest, res): Promise<an
 
 router.post('/changePassword', verifyAuth, changePassword);
 router.get('/getAllStudentProfiles', resolveTenant, getAllStudentProfiles);
+
+// --- Token Management ---
+
+router.post('/refresh', async (req, res) => {
+    const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken) {
+        return res.status(401).json({ success: false, message: 'No refresh token provided' });
+    }
+
+    try {
+        const decoded = jwt.verify(refreshToken, jwt_secret as string) as any;
+        
+        // Verify session exists in DB
+        const session = await Session.findOne({ refreshToken });
+        if (!session) {
+            return res.status(403).json({ success: false, message: 'Session expired or invalidated' });
+        }
+
+        const payload = { id: decoded.id, role: decoded.role, organizationId: decoded.organizationId, currentClass: decoded.currentClass };
+        
+        const newAccessToken = jwt.sign(payload, jwt_secret as string, { expiresIn: '15m' });
+        
+        return res.status(200).json({
+            success: true,
+            authToken: newAccessToken
+        });
+    } catch (error) {
+        return res.status(403).json({ success: false, message: 'Invalid or expired refresh token' });
+    }
+});
+
+router.post('/logout', async (req, res) => {
+    const refreshToken = req.cookies?.refreshToken;
+    if (refreshToken) {
+        await Session.deleteOne({ refreshToken });
+    }
+    res.clearCookie('refreshToken', { httpOnly: true, sameSite: 'strict' });
+    return res.status(200).json({ success: true, message: 'Logged out successfully' });
+});
 
 export default router;

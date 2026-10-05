@@ -1,6 +1,5 @@
 import axios from 'axios';
 import type { NoticeFormData } from '../types/types';
-import { getOrgSlug } from '../../../../utils/tenant';
 import { getAuthHeaders } from '../../../../utils/authHeader';
 
 

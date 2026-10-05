@@ -136,6 +136,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { StyledAppBar, HeaderContent, ProfileSection } from './AdminHeader.styles';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { logoutUser } from '../../api/apiFunctions';
 
 interface AdminHeaderProps {
   handleDrawerToggle: () => void;
@@ -260,7 +261,8 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ handleDrawerToggle }) => {
           </Button>
           <Button
             variant="contained"
-            onClick={() => {
+            onClick={async () => {
+              await logoutUser();
               window.localStorage.removeItem('authToken');
               navigate('/login');
             }}

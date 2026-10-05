@@ -3,18 +3,13 @@ import nodemailer from "nodemailer";
 import { authenticator } from "otplib";
 import bcrypt from "bcryptjs";
 import Otp from "../models/Otp";
+import Organization from "../models/Organization";
 
 const COOLDOWN_MS = 90 * 1000; // 90 seconds
 const MAX_ATTEMPTS = 5;
 
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
-  },
-});
+import { sendEmailJob } from '../queues/emailQueue';
 
 // DON'T DELETE THIS BELOW COMMENTED PART
 
@@ -32,7 +27,7 @@ const transporter = nodemailer.createTransport({
 
 authenticator.options = { digits: 6, step: 300 };
 
-const getEmailTemplate = (otp: string, isResend: boolean, currentAttempts: number) => {
+const getEmailTemplate = (otp: string, isResend: boolean, currentAttempts: number, orgName: string) => {
   const title = isResend ? "New Verification Code" : "Login Verification Code";
   const subText = isResend ? "Here is your new login code." : "You requested a secure login.";
 
@@ -43,8 +38,8 @@ const getEmailTemplate = (otp: string, isResend: boolean, currentAttempts: numbe
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
       <div style="background-color: #2E7D32; padding: 30px 20px; text-align: center;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600; letter-spacing: 1px;">Example Coaching Center</h1>
-        <p style="color: #E8F5E9; margin: 5px 0 0; font-size: 14px;">Excellence in JEE, NEET & Boards</p>
+        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600; letter-spacing: 1px;">${orgName}</h1>
+        <p style="color: #E8F5E9; margin: 5px 0 0; font-size: 14px;">Secure Portal Login</p>
       </div>
 
       <div style="padding: 40px 30px; text-align: center;">
@@ -72,7 +67,7 @@ const getEmailTemplate = (otp: string, isResend: boolean, currentAttempts: numbe
 
       <div style="background-color: #f5f5f5; padding: 15px; text-align: center; border-top: 1px solid #eeeeee;">
         <p style="color: #888888; font-size: 12px; margin: 0;">
-          &copy; ${new Date().getFullYear()} Example Coaching Center. All rights reserved.
+          &copy; ${new Date().getFullYear()} ${orgName}. All rights reserved.
         </p>
       </div>
     </div>
@@ -121,11 +116,14 @@ export const sendOtp = async (
       createdAt: new Date()
     });
 
-    await transporter.sendMail({
-      from: `"example coaching Auth" <${process.env.MAIL_USER}>`,
+    const org = await Organization.findById(organizationId);
+    const orgName = org ? org.name : "Secure Portal";
+
+    await sendEmailJob({
+      from: `"${orgName} Auth" <${process.env.MAIL_USER}>`,
       to: email,
       subject: "Your Login Verification Code",
-      html: getEmailTemplate(otp, false, 0), // 0 attempts used initially
+      html: getEmailTemplate(otp, false, 0, orgName),
     });
 
     return { success: true, message: "OTP sent successfully" };
@@ -156,17 +154,20 @@ export const verifyOtp = async (email: string, otp: string, organizationId: stri
     const isMatch = await bcrypt.compare(otp, otpDoc.otp);
 
     if (!isMatch) {
-      otpDoc.attempts += 1;
-      await otpDoc.save();
+      const updatedOtp = await Otp.findOneAndUpdate(
+        { _id: otpDoc._id },
+        { $inc: { attempts: 1 } },
+        { new: true }
+      );
 
-      if (otpDoc.attempts >= MAX_ATTEMPTS) {
+      if (updatedOtp && updatedOtp.attempts >= MAX_ATTEMPTS) {
         return { success: false, message: "Too many attempts. Maximum limit reached. Please Login again." };
       }
 
       return {
         success: false,
         message: "Invalid OTP",
-        remainingAttempts: MAX_ATTEMPTS - otpDoc.attempts,
+        remainingAttempts: updatedOtp ? (MAX_ATTEMPTS - updatedOtp.attempts) : 0,
       };
     }
 
@@ -216,11 +217,14 @@ export const resendOtp = async (email: string, organizationId: string) => {
 
     await existingOtp.save();
 
-    await transporter.sendMail({
-      from: `"example coaching Auth" <${process.env.MAIL_USER}>`,
+    const org = await Organization.findById(organizationId);
+    const orgName = org ? org.name : "Secure Portal";
+
+    await sendEmailJob({
+      from: `"${orgName} Auth" <${process.env.MAIL_USER}>`,
       to: email,
       subject: "Your New Verification Code",
-      html: getEmailTemplate(otp, true, existingOtp.attempts), // Pass current attempts
+      html: getEmailTemplate(otp, true, existingOtp.attempts, orgName),
     });
 
     return { success: true, message: "OTP resent successfully" };

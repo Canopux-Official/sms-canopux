@@ -216,7 +216,7 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 
 import { RootContainer, StyledDrawer, StyledAppBar, MainContent, LogoSection } from './StudentLayout.styles';
 import LogoImg from '../../assets/logo.jpeg';
-import { getStudentProfile } from '../../api/apiFunctions';
+import { getStudentProfile, logoutUser } from '../../api/apiFunctions';
 
 interface StudentData {
   name?: string;
@@ -360,7 +360,8 @@ const StudentLayout: React.FC = () => {
                 </Button>
                 <Button
                   variant="contained"
-                  onClick={() => {
+                  onClick={async () => {
+                    await logoutUser();
                     window.localStorage.removeItem('authToken');
                     navigate('/login');
                   }}
