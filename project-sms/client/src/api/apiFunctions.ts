@@ -3,6 +3,20 @@ import axios, { AxiosError, type AxiosRequestConfig } from 'axios';
 import { getAuthHeaders } from '../utils/authHeader';
 import { getOrgSlug } from '../utils/tenant';
 
+export interface OrganizationInfo {
+  _id: string;
+  name: string;
+  slug?: string;
+  logoUrl?: string;
+}
+
+export interface ValidateTokenResult {
+  isValid: boolean;
+  role?: string;
+  user?: { permissions?: Record<string, boolean>;[key: string]: unknown };
+  organization?: OrganizationInfo | null;
+}
+
 // Globally ensure cookies are sent
 axios.defaults.withCredentials = true;
 
@@ -14,14 +28,14 @@ axios.interceptors.response.use(
     if (error.response && (error.response.status === 401 || error.response.status === 403) && !originalRequest._retry) {
       // Prevent infinite loops and don't try to refresh on login/OTP routes
       if (
-        originalRequest.url.includes('/auth/refresh') || 
+        originalRequest.url.includes('/auth/refresh') ||
         originalRequest.url.includes('/auth/getLoggedInUser') ||
         originalRequest.url.includes('/auth/verifyOtp') ||
         originalRequest.url.includes('/auth/resendOtp')
       ) {
         return Promise.reject(error);
       }
-      
+
       originalRequest._retry = true;
       try {
         // Attempt to get a new access token
@@ -230,21 +244,25 @@ export async function verifyOtp(payload: VerifyOtpPayload): Promise<ApiResponse>
     };
   }
 }
-export async function validateToken(): Promise<{ isValid: boolean; role?: string }> {
+export async function validateToken(): Promise<ValidateTokenResult> {
   try {
     const config: AxiosRequestConfig = {
       method: "get",
       url: `${import.meta.env.VITE_SERVER_LINK}/auth/verifyToken`,
-      headers: getAuthHeaders() // Reuses your existing helper
+      headers: getAuthHeaders(),
     };
 
     const response = await axios(config);
     if (response.status === 200 && response.data.success) {
-      return { isValid: true, role: response.data.role };
+      return {
+        isValid: true,
+        role: response.data.role,
+        user: response.data.user,
+        organization: response.data.organization ?? null,
+      };
     }
     return { isValid: false };
   } catch {
-    // If 401 or network error, token is invalid
     return { isValid: false };
   }
 }
@@ -286,7 +304,7 @@ export interface GetStudentsParams {
 export async function getStudents(params?: GetStudentsParams): Promise<ApiResponse> {
   try {
     let url = `${import.meta.env.VITE_SERVER_LINK}/admin/studentControl/getAllStudents`;
-    
+
     if (params) {
       const queryParams = new URLSearchParams();
       if (params.page) queryParams.append('page', params.page.toString());
@@ -296,9 +314,9 @@ export async function getStudents(params?: GetStudentsParams): Promise<ApiRespon
       if (params.stream && params.stream !== 'All') queryParams.append('stream', params.stream);
       if (params.targetExams && params.targetExams.length > 0) queryParams.append('targetExams', params.targetExams.join(','));
       if (params.isActive && params.isActive !== 'All') {
-          queryParams.append('isActive', params.isActive === 'Active' ? 'true' : 'false');
+        queryParams.append('isActive', params.isActive === 'Active' ? 'true' : 'false');
       }
-      
+
       const queryString = queryParams.toString();
       if (queryString) {
         url += `?${queryString}`;

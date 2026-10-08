@@ -94,7 +94,7 @@ function AppLayout() {
       <Routes>
         {/* Public Routes (Non-LandingPage) */}
         <Route path="/login" element={<LoginPage />} />
-        
+
         {/* Landing spot for "Login as Superadmin" */}
         <Route path="/admin/impersonate" element={<ImpersonateBridge />} />
 

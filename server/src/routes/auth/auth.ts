@@ -10,6 +10,7 @@ import { changePassword, getAllStudentProfiles } from '../../controllers/student
 import verifyAuth, { AuthRequest } from '../../middlewares/verifyAuth';
 import bcrypt from 'bcryptjs';
 import resolveTenant, { TenantRequest } from '../../middlewares/resolveTenant';
+import Organization from '../../models/Organization';
 
 const router = express.Router();
 
@@ -184,7 +185,7 @@ router.post('/verifyOtp', resolveTenant, async (req: TenantRequest, res): Promis
                 process.env.JWT_SECRET as string,
                 { expiresIn: '15m' }
             );
-            
+
             const refreshToken = jwt.sign(
                 payload,
                 process.env.JWT_SECRET as string,
@@ -238,7 +239,7 @@ router.get('/verifyToken', verifyAuth, async (req: AuthRequest, res): Promise<an
 
         // Check Database based on Role
         if (role === 'admin' || role === 'superadmin') {
-            userExists = await Admin.findById(id).select('-password'); // Exclude password
+            userExists = await Admin.findById(id).select('-password');
         } else if (role === 'student') {
             userExists = await Student.findById(id).select('-password');
         }
@@ -247,11 +248,26 @@ router.get('/verifyToken', verifyAuth, async (req: AuthRequest, res): Promise<an
         if (!userExists) {
             return res.status(404).json({ success: false, message: 'User record not found. Please login again.' });
         }
-        // Success: User is real and token is valid
+
+        // Fetch only the fields you need from the organization
+        const organization = userExists.organizationId
+            ? await Organization.findById(userExists.organizationId)
+                .select('name slug branding.logoUrl')
+                .lean()
+            : null;
+
         return res.status(200).json({
             success: true,
             user: userExists,
-            role: role
+            role: role,
+            organization: organization
+                ? {
+                    _id: organization._id,
+                    name: organization.name,
+                    slug: organization.slug,
+                    logoUrl: organization.branding?.logoUrl,
+                }
+                : null,
         });
 
     } catch (error) {
@@ -273,7 +289,7 @@ router.post('/refresh', async (req, res) => {
 
     try {
         const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET as string) as any;
-        
+
         // Verify session exists in DB
         const session = await Session.findOne({ refreshToken });
         if (!session) {
@@ -281,9 +297,9 @@ router.post('/refresh', async (req, res) => {
         }
 
         const payload = { id: decoded.id, role: decoded.role, organizationId: decoded.organizationId, currentClass: decoded.currentClass };
-        
+
         const newAccessToken = jwt.sign(payload, process.env.JWT_SECRET as string, { expiresIn: '15m' });
-        
+
         return res.status(200).json({
             success: true,
             authToken: newAccessToken
