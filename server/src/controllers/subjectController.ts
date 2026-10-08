@@ -16,10 +16,20 @@ export const getAllSubjects = async (req: AuthRequest, res: Response) => {
 export const addSubject = async (req: AuthRequest, res: Response) => {
     try {
         const { name, isActive } = req.body;
-        if (!name) return res.status(400).json({ message: "Name is required" });
+        if (!name || !name.trim()) return res.status(400).json({ message: "Name is required" });
 
-        // const newSubject = await Subject.create({ name, isActive });
-        const newSubject = await Subject.create({ name, isActive, organizationId: req.user?.organizationId });
+        const trimmedName = name.trim();
+
+        const existingSubject = await Subject.findOne({
+            organizationId: req.user?.organizationId,
+            name: { $regex: new RegExp(`^${trimmedName}$`, 'i') }
+        });
+
+        if (existingSubject) {
+            return res.status(409).json({ message: `Subject "${existingSubject.name}" already exists` });
+        }
+
+        const newSubject = await Subject.create({ name: trimmedName, isActive, organizationId: req.user?.organizationId });
         return res.status(201).json(newSubject);
     } catch (error: any) {
         if (error.code === 11000) {
@@ -32,10 +42,26 @@ export const addSubject = async (req: AuthRequest, res: Response) => {
 export const updateSubject = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
-        // const updatedSubject = await updatedSubject.findByIdAndUpdate(id, req.body, { new: true });
+        const updateData = { ...req.body };
+
+        if (updateData.name) {
+            updateData.name = updateData.name.trim();
+            if (!updateData.name) return res.status(400).json({ message: "Name cannot be empty" });
+
+            const existingSubject = await Subject.findOne({
+                organizationId: req.user?.organizationId,
+                name: { $regex: new RegExp(`^${updateData.name}$`, 'i') },
+                _id: { $ne: id }
+            });
+
+            if (existingSubject) {
+                return res.status(409).json({ message: `Subject "${existingSubject.name}" already exists` });
+            }
+        }
+
         const updatedSubject = await Subject.findOneAndUpdate(
             { _id: id, organizationId: req.user?.organizationId },
-            req.body,
+            updateData,
             { new: true }
         );
         if (!updatedSubject) return res.status(404).json({ message: "Subject not found" });
