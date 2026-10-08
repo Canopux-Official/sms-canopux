@@ -26,6 +26,7 @@ import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import { getAdminProfile, validateToken, type OrganizationInfo } from '../../api/apiFunctions';
 import { LogoContainer, drawerPaperStyles } from './AdminSidebar.styles';
 import LogoImg from '../../assets/sms-logo.png';
+import { useOrgBranding } from '../../hooks/useOrgBranding';
 
 interface AdminSidebarProps {
   mobileOpen: boolean;
@@ -73,7 +74,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ mobileOpen, handleDrawerTog
   const logoSrc = organization?.logoUrl && !logoFailed ? organization.logoUrl : LogoImg;
   const orgName = organization?.name || 'Coaching';
 
-  console.log(orgName)
+  useOrgBranding(organization?.name, organization?.logoUrl, 'Admin');
 
   const allMenuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin', permissionKey: null },

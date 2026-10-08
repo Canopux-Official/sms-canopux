@@ -33,7 +33,8 @@ export const loginStyles: Record<string, SxProps<Theme>> = {
   welcomeText: {
     fontFamily: '"Montserrat", sans-serif',
     fontWeight: 800,
-    fontSize: '3.5rem',
+    fontSize: { md: '2.4rem', lg: '3rem' },
+    wordBreak: 'break-word',
     lineHeight: 1.1,
     mb: 2,
     textAlign: 'center',

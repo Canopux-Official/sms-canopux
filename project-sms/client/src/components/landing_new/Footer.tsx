@@ -33,6 +33,8 @@ interface FooterData {
 
 interface FooterProps {
   data?: FooterData;
+  orgName?: string;
+  logoUrl?: string;
 }
 
 // Static company nav links (Courses link points to #courses section)
@@ -55,19 +57,21 @@ const handleNavClick = (e: React.MouseEvent, href: string) => {
   }
 }
 
-export default function Footer({ data }: FooterProps) {
+export default function Footer({ data, orgName, logoUrl }: FooterProps) {
   const [contactOpen, setContactOpen] = useState(false);
+  const displayName = orgName || 'Coaching Centre';
+  const logoSrc = logoUrl || LogoCircular;
 
   const d = {
     brandDescription: data?.brandDescription || 'Transforming academic aspirations into achievements through excellence and dedication.',
     ctaHeading: data?.ctaHeading || 'Ready to Transform Your Future?',
-    ctaSubtext: data?.ctaSubtext || 'Join thousands of successful students who have achieved their dreams with Example Coaching Center.',
+    ctaSubtext: data?.ctaSubtext || `Join thousands of successful students who have achieved their dreams with ${displayName}.`,
     ctaButtonPrimary: data?.ctaButtonPrimary || 'Enroll Now',
     ctaButtonSecondary: data?.ctaButtonSecondary || 'Schedule a Demo',
     phones: (data?.phones && data.phones.length > 0) ? data.phones : ['+91 9876 543 210', '+91 8765 432 109'],
     email: data?.email || 'contact@elite.com',
     address: data?.address || '123 Ave, City — 110001',
-    copyrightText: data?.copyrightText || '© 2025 Example Coaching Center. All rights reserved.',
+    copyrightText: data?.copyrightText || `© ${new Date().getFullYear()} ${displayName}. All rights reserved.`,
     socialLinks: {
       facebook: data?.socialLinks?.facebook || '#',
       instagram: data?.socialLinks?.instagram || '#',
@@ -245,17 +249,18 @@ export default function Footer({ data }: FooterProps) {
                 <Box sx={{ width: 48, height: 48, borderRadius: 2, overflow: 'hidden', flexShrink: 0 }}>
                   <Box
                     component="img"
-                    src={LogoCircular}
-                    alt="example coaching Logo"
+                    src={logoSrc}
+                    alt={`${displayName} Logo`}
+                    onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                      e.currentTarget.onerror = null
+                      e.currentTarget.src = LogoCircular
+                    }}
                     sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
                   />
                 </Box>
                 <Box>
                   <Typography sx={{ fontFamily: 'Montserrat', fontWeight: 800, fontSize: { xs: 13, md: 15 }, color: '#fff', lineHeight: 1.5 }}>
-                    Example Coaching Center
-                  </Typography>
-                  <Typography sx={{ fontSize: 10, color: 'rgba(216,237,224,0.55)', letterSpacing: 1.2, textTransform: 'uppercase' }}>
-                    Coaching Centre
+                    {displayName}
                   </Typography>
                 </Box>
               </Box>

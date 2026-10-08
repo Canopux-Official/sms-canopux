@@ -23,12 +23,24 @@ import { useNavigate } from 'react-router-dom';
 import JIS from '../../assets/sms-logo.png';
 
 // Import functions from your API file
-import { getLoggedInUser, verifyOtp, resendOtp, validateToken } from '../../api/apiFunctions';
+import { getLoggedInUser, verifyOtp, resendOtp, validateToken, type OrganizationInfo, getLandingPage } from '../../api/apiFunctions';
 import SEO from '../../components/SEO';
 import { getOrgSlug } from '../../utils/tenant';
+import { useOrgBranding } from '../../hooks/useOrgBranding';
+
+interface OrgInfo {
+  name: string;
+  slug: string;
+  branding?: { logoUrl?: string };
+}
+
 
 const LoginPage = () => {
   const navigate = useNavigate();
+
+  const [org, setOrg] = useState<OrgInfo | null>(null);
+  const orgName = org?.name || 'Coaching Center';
+  const logoSrc = org?.branding?.logoUrl || JIS;
 
   // State Management
   const [step, setStep] = useState<'FORM' | 'OTP'>('FORM');
@@ -58,6 +70,23 @@ const LoginPage = () => {
 
   // --- ADMIN LOGIC ---
   const isAdmin = formData.role === 'admin' || formData.role === 'superadmin';
+
+  useEffect(() => {
+    const fetchOrg = async () => {
+      try {
+        const res = await getLandingPage();
+        if (res.success) {
+          const body = res.data as { organization?: OrgInfo | null };
+          setOrg(body.organization ?? null);
+        }
+      } catch (error) {
+        console.error('Failed to load organization info:', error);
+      }
+    };
+    fetchOrg();
+  }, []);
+
+  useOrgBranding(org?.branding?.logoUrl);
 
   // --- AUTO-LOGIN IF VALID TOKEN ---
   useEffect(() => {
@@ -295,8 +324,8 @@ const LoginPage = () => {
   return (
     <Box sx={loginStyles.container}>
       <SEO
-        title="Student & Admin Portal | Example Coaching Center"
-        description="Login to the Example Coaching Center portal to access your courses, dashboard, and educational resources."
+        title={`Student & Admin Portal | ${orgName}`}
+        description={`Login to the ${orgName} portal to access your courses, dashboard, and educational resources.`}
       />
       {/* LEFT SECTION */}
       <Box sx={loginStyles.leftSection}>
@@ -314,8 +343,12 @@ const LoginPage = () => {
             }}>
               <Box
                 component="img"
-                src={JIS}
-                alt="example coaching Logo"
+                src={logoSrc}
+                alt={`${orgName} Logo`}
+                onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = JIS;
+                }}
                 sx={{
                   height: { xs: '100px', md: '140px' },
                   width: { xs: '100px', md: '140px' },
@@ -325,7 +358,7 @@ const LoginPage = () => {
             </Box>
 
             <Typography variant="h1" sx={loginStyles.welcomeText}>
-              Example Coaching Center
+              {orgName}
             </Typography>
 
             <Typography variant="h6" sx={loginStyles.subText}>
@@ -340,7 +373,7 @@ const LoginPage = () => {
       <Box sx={loginStyles.rightSection}>
         <Box sx={loginStyles.formBox}>
           <Typography variant="h4" sx={loginStyles.brandLogo} onClick={() => navigate('/')}>
-            Example Coaching Center
+            {orgName}
           </Typography>
 
           {/* Dynamic Title based on Admin State */}
@@ -416,7 +449,7 @@ const LoginPage = () => {
                   <TextField
                     fullWidth
                     label="Enrollment Number"
-                    placeholder="JISXXXXXXX"
+                    placeholder={`${(getOrgSlug() || 'STU').substring(0, 3).toUpperCase()}XXXXXXX`}
                     value={formData.enrollmentNumber}
                     onChange={handleChange('enrollmentNumber')}
                     error={!!errors.enrollmentNumber}

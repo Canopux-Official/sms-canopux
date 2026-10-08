@@ -12,6 +12,7 @@ import theme from '../../components/landing_new/theme/theme';
 import { getLandingPage } from '../../api/apiFunctions';
 import SEO from '../../components/SEO';
 import Gallery from '../../components/landing_new/Gallery';
+import { useOrgBranding } from '../../hooks/useOrgBranding';
 
 interface FooterData {
   brandDescription?: string;
@@ -39,17 +40,26 @@ interface LandingData {
   gallery?: { publicid: string; url: string }[];
 }
 
+interface OrgInfo {
+  name: string;
+  slug: string;
+  branding?: { logoUrl?: string };
+}
+
 const LandingPage = () => {
   const [data, setData] = useState<LandingData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [org, setOrg] = useState<OrgInfo | null>(null);
 
   useEffect(() => {
     const fetchLandingData = async () => {
       try {
         const response = await getLandingPage();
         if (response.success) {
-          const payload = response.data as { data: LandingData };
+          const payload = response.data as { data: LandingData; organization?: OrgInfo | null };
           setData(payload.data);
+          setOrg(payload.organization ?? null);
         }
       } catch (error) {
         console.error("Failed to fetch landing page data:", error);
@@ -59,6 +69,8 @@ const LandingPage = () => {
     };
     fetchLandingData();
   }, []);
+
+  useOrgBranding(org?.branding?.logoUrl);
 
   if (loading) {
     return (
@@ -78,14 +90,14 @@ const LandingPage = () => {
       />
       {/* Inject premium fonts */}
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;0,800;1,400;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');`}</style>
-      <Header />
+      <Header orgName={org?.name} logoUrl={org?.branding?.logoUrl} />
       <Hero data={data?.hero} />
       <Results data={data?.results} />
       <Courses data={data?.courses} />
       <Faculty data={data?.faculty} stats={data?.facultyStats} />
       <FAQ data={data?.faqs} />
       <Gallery data={data?.gallery} />
-      <Footer data={data?.footer} />
+      <Footer data={data?.footer} orgName={org?.name} logoUrl={org?.branding?.logoUrl} />
     </ThemeProvider>
   );
 };

@@ -25,7 +25,14 @@ function smoothScrollTo(href: string) {
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-export default function Header() {
+interface HeaderProps {
+  orgName?: string
+  logoUrl?: string
+}
+
+export default function Header({ orgName, logoUrl }: HeaderProps) {
+  const displayName = orgName || 'Coaching Centre'
+  const logoSrc = logoUrl || LogoImg
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const theme = useTheme()
@@ -64,7 +71,11 @@ export default function Header() {
               border: '1.5px solid rgba(10,37,64,0.1)',
               boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
             }}>
-              <Box component="img" src={LogoImg} alt="example coaching Logo"
+              <Box component="img" src={logoSrc} alt={`${displayName} Logo`}
+                onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                  e.currentTarget.onerror = null
+                  e.currentTarget.src = LogoImg
+                }}
                 sx={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </Box>
             <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
@@ -72,10 +83,7 @@ export default function Header() {
                 fontFamily: '"DM Sans", sans-serif', fontWeight: 700,
                 fontSize: 15, color: '#0a2540', lineHeight: 1.2, letterSpacing: '-0.02em',
               }}>
-                Example Coaching Center
-              </Typography>
-              <Typography sx={{ fontSize: 10.5, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: '"DM Sans", sans-serif' }}>
-                Coaching Centre
+                {displayName}
               </Typography>
             </Box>
           </Box>
@@ -137,10 +145,15 @@ export default function Header() {
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, mb: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Box sx={{ width: 38, height: 38, borderRadius: '10px', overflow: 'hidden', border: '1px solid rgba(10,37,64,0.1)' }}>
-                <Box component="img" src={LogoImg} alt="Logo" sx={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                <Box component="img" src={logoSrc} alt={`${displayName} Logo`}
+                  onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                    e.currentTarget.onerror = null
+                    e.currentTarget.src = LogoImg
+                  }}
+                  sx={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </Box>
               <Typography sx={{ fontFamily: '"DM Sans", sans-serif', fontWeight: 700, fontSize: 13, color: '#0a2540' }}>
-                example coaching
+                {displayName}
               </Typography>
             </Box>
             <IconButton onClick={() => setMobileOpen(false)} sx={{ color: '#374151' }}>
