@@ -1,15 +1,16 @@
 import { Queue } from 'bullmq';
 
-// We reuse the Redis connection URL, defaulting to local redis if none is provided.
-const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+const redisUrl = process.env.REDIS_URL;
 
-const connection = {
-  url: redisUrl,
-};
+const connection = redisUrl ? { url: redisUrl } : undefined;
 
-export const emailQueue = new Queue('email-queue', { connection });
+export const emailQueue = connection ? new Queue('email-queue', { connection }) : null;
 
 export const sendEmailJob = async (emailData: any) => {
+  if (!emailQueue) {
+    console.warn('[EmailQueue] Redis not configured. Skipping BullMQ job.');
+    return false;
+  }
   await emailQueue.add('send-email', emailData, {
     attempts: 3,
     backoff: {
@@ -19,4 +20,5 @@ export const sendEmailJob = async (emailData: any) => {
     removeOnComplete: true,
     removeOnFail: false,
   });
+  return true;
 };

@@ -12,12 +12,11 @@ import bcrypt from 'bcryptjs';
 import resolveTenant, { TenantRequest } from '../../middlewares/resolveTenant';
 
 const router = express.Router();
-const jwt_secret = process.env.JWT_SECRET;
 
 router.post('/getLoggedInUser', resolveTenant, async (req: TenantRequest, res): Promise<any> => {
     const { name, dob, phoneNumber, currentClass, password, role, enrollmentNumber } = req.body;
 
-    if (!jwt_secret) {
+    if (!process.env.JWT_SECRET) {
         return res.status(500).json({ success: false, message: 'Server Config Error: JWT_SECRET missing error here' });
     }
 
@@ -77,12 +76,12 @@ router.post('/getLoggedInUser', resolveTenant, async (req: TenantRequest, res): 
             const payload = { id: student._id, role: "student", organizationId: student.organizationId, currentClass: student.currentClass };
             const authToken = jwt.sign(
                 payload,
-                jwt_secret,
+                process.env.JWT_SECRET as string,
                 { expiresIn: '15m' }
             );
             const refreshToken = jwt.sign(
                 payload,
-                jwt_secret,
+                process.env.JWT_SECRET as string,
                 { expiresIn: '7d' }
             );
 
@@ -182,13 +181,13 @@ router.post('/verifyOtp', resolveTenant, async (req: TenantRequest, res): Promis
 
             const authToken = jwt.sign(
                 payload,
-                jwt_secret as string,
+                process.env.JWT_SECRET as string,
                 { expiresIn: '15m' }
             );
             
             const refreshToken = jwt.sign(
                 payload,
-                jwt_secret as string,
+                process.env.JWT_SECRET as string,
                 { expiresIn: '7d' }
             );
 
@@ -273,7 +272,7 @@ router.post('/refresh', async (req, res) => {
     }
 
     try {
-        const decoded = jwt.verify(refreshToken, jwt_secret as string) as any;
+        const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET as string) as any;
         
         // Verify session exists in DB
         const session = await Session.findOne({ refreshToken });
@@ -283,7 +282,7 @@ router.post('/refresh', async (req, res) => {
 
         const payload = { id: decoded.id, role: decoded.role, organizationId: decoded.organizationId, currentClass: decoded.currentClass };
         
-        const newAccessToken = jwt.sign(payload, jwt_secret as string, { expiresIn: '15m' });
+        const newAccessToken = jwt.sign(payload, process.env.JWT_SECRET as string, { expiresIn: '15m' });
         
         return res.status(200).json({
             success: true,
