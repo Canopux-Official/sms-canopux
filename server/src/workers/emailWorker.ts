@@ -1,11 +1,9 @@
 import { Worker, Job } from 'bullmq';
 import nodemailer from 'nodemailer';
 
-const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+const redisUrl = process.env.REDIS_URL;
 
-const connection = {
-  url: redisUrl,
-};
+const connection = redisUrl ? { url: redisUrl } : undefined;
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -15,7 +13,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export const emailWorker = new Worker(
+export const emailWorker = connection ? new Worker(
   'email-queue',
   async (job: Job) => {
     const { to, subject, html, from } = job.data;
@@ -36,8 +34,12 @@ export const emailWorker = new Worker(
     }
   },
   { connection }
-);
+) : null;
 
-emailWorker.on('failed', (job, err) => {
-  console.error(`[EmailWorker] Job ${job?.id} failed:`, err);
-});
+if (emailWorker) {
+  emailWorker.on('failed', (job, err) => {
+    console.error(`[EmailWorker] Job ${job?.id} failed:`, err);
+  });
+} else {
+  console.log('[EmailWorker] Redis not configured. Email worker will not start.');
+}

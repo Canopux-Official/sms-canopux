@@ -25,6 +25,14 @@ import { sendEmailJob } from '../queues/emailQueue';
 //   greetingTimeout: 20000,
 // });
 
+const fallbackTransporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS,
+  },
+});
+
 authenticator.options = { digits: 6, step: 300 };
 
 const getEmailTemplate = (otp: string, isResend: boolean, currentAttempts: number, orgName: string) => {
@@ -119,12 +127,18 @@ export const sendOtp = async (
     const org = await Organization.findById(organizationId);
     const orgName = org ? org.name : "Secure Portal";
 
-    await sendEmailJob({
+    const mailOptions = {
       from: `"${orgName} Auth" <${process.env.MAIL_USER}>`,
       to: email,
       subject: "Your Login Verification Code",
       html: getEmailTemplate(otp, false, 0, orgName),
-    });
+    };
+
+    const queued = await sendEmailJob(mailOptions);
+    if (!queued) {
+      console.log('[OTP] Sending email directly (Redis bypassed)');
+      await fallbackTransporter.sendMail(mailOptions);
+    }
 
     return { success: true, message: "OTP sent successfully" };
 
@@ -220,12 +234,18 @@ export const resendOtp = async (email: string, organizationId: string) => {
     const org = await Organization.findById(organizationId);
     const orgName = org ? org.name : "Secure Portal";
 
-    await sendEmailJob({
+    const mailOptions = {
       from: `"${orgName} Auth" <${process.env.MAIL_USER}>`,
       to: email,
       subject: "Your New Verification Code",
       html: getEmailTemplate(otp, true, existingOtp.attempts, orgName),
-    });
+    };
+
+    const queued = await sendEmailJob(mailOptions);
+    if (!queued) {
+      console.log('[OTP] Sending email directly (Redis bypassed)');
+      await fallbackTransporter.sendMail(mailOptions);
+    }
 
     return { success: true, message: "OTP resent successfully" };
 

@@ -12,8 +12,13 @@ axios.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     if (error.response && (error.response.status === 401 || error.response.status === 403) && !originalRequest._retry) {
-      // Prevent infinite loops if the refresh endpoint itself fails
-      if (originalRequest.url.includes('/auth/refresh')) {
+      // Prevent infinite loops and don't try to refresh on login/OTP routes
+      if (
+        originalRequest.url.includes('/auth/refresh') || 
+        originalRequest.url.includes('/auth/getLoggedInUser') ||
+        originalRequest.url.includes('/auth/verifyOtp') ||
+        originalRequest.url.includes('/auth/resendOtp')
+      ) {
         return Promise.reject(error);
       }
       
