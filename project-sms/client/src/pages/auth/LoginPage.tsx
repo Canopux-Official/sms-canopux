@@ -25,6 +25,7 @@ import JIS from '../../assets/sms-logo.png';
 // Import functions from your API file
 import { getLoggedInUser, verifyOtp, resendOtp, validateToken } from '../../api/apiFunctions';
 import SEO from '../../components/SEO';
+import { getOrgSlug } from '../../utils/tenant';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -144,10 +145,13 @@ const LoginPage = () => {
       }
     } else {
       // Student Validations
+      const orgSlug = getOrgSlug();
+      const expectedPrefix = orgSlug ? orgSlug.substring(0, 3).toUpperCase() : "STU";
+
       if (!enrollmentNumber) {
         newErrors.enrollmentNumber = "Enrollment Number is required";
-      } else if (!enrollmentNumber.startsWith("JIS")) {
-        newErrors.enrollmentNumber = "Enrollment Number must start with JIS";
+      } else if (!enrollmentNumber.toUpperCase().startsWith(expectedPrefix)) {
+        newErrors.enrollmentNumber = `Enrollment Number must start with ${expectedPrefix}`;
       }
     }
 

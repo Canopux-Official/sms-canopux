@@ -312,13 +312,13 @@ const StudentLayout: React.FC = () => {
 
           <Stack direction="row" spacing={2} alignItems="center">
             {/* Profile Preview */}
-            <Box display="flex" alignItems="center" gap={1} sx={{ display: { xs: 'none', sm: 'flex' } }}>
+            {/* <Box display="flex" alignItems="center" gap={1} sx={{ display: { xs: 'none', sm: 'flex' } }}>
               <Box textAlign="right">
                 <Typography variant="body2" fontWeight={600}>{studentName}</Typography>
                 <Typography variant="caption" color="text.secondary">Class {student?.currentClass || "0"} - {student?.stream?.name || 'General'}</Typography>
               </Box>
               <Avatar sx={{ bgcolor: 'secondary.main', color: 'primary.main', width: 36, height: 36, fontSize: '0.9rem' }}>{student?.name ? student.name.charAt(0).toUpperCase() : 'S'}</Avatar>
-            </Box>
+            </Box> */}
 
             {/* Logout Button (Directly in Navbar) */}
             <Button
