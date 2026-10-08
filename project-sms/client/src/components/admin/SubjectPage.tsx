@@ -74,13 +74,19 @@ const SubjectsPage: React.FC = () => {
 
   const handleSave = async () => {
     if (!formData.name.trim()) return alert("Subject Name is required");
+    let res;
     if (editingId) {
-        await updateSubject(editingId, formData);
+        res = await updateSubject(editingId, formData);
     } else {
-        await addSubject(formData);
+        res = await addSubject(formData);
     }
-    setOpenDialog(false);
-    fetchSubjects();
+    
+    if (res?.success) {
+        setOpenDialog(false);
+        fetchSubjects();
+    } else {
+        alert(res?.message || "An error occurred");
+    }
   };
 
   const filteredSubjects = subjects.filter(subject => 

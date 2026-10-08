@@ -21,7 +21,10 @@ export const addSubject = async (req: AuthRequest, res: Response) => {
         // const newSubject = await Subject.create({ name, isActive });
         const newSubject = await Subject.create({ name, isActive, organizationId: req.user?.organizationId });
         return res.status(201).json(newSubject);
-    } catch (error) {
+    } catch (error: any) {
+        if (error.code === 11000) {
+            return res.status(409).json({ message: "Subject with this name already exists" });
+        }
         return res.status(500).json({ message: "Error adding subject", error });
     }
 };
@@ -37,7 +40,10 @@ export const updateSubject = async (req: AuthRequest, res: Response) => {
         );
         if (!updatedSubject) return res.status(404).json({ message: "Subject not found" });
         return res.status(200).json(updatedSubject);
-    } catch (error) {
+    } catch (error: any) {
+        if (error.code === 11000) {
+            return res.status(409).json({ message: "Subject with this name already exists" });
+        }
         return res.status(500).json({ message: "Error updating subject", error });
     }
 };
