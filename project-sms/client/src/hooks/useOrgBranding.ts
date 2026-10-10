@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-export function useOrgBranding(orgName?: string, iconUrl?: string, titleSuffix = '') {
+export function useOrgBranding(orgName?: string, FaviconUrl?: string, titleSuffix = '') {
     // Tab title
     useEffect(() => {
         if (!orgName) return;
@@ -11,7 +11,7 @@ export function useOrgBranding(orgName?: string, iconUrl?: string, titleSuffix =
 
     // Favicon
     useEffect(() => {
-        if (!iconUrl) return;
+        if (!FaviconUrl) return;
         let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
         if (!link) {
             link = document.createElement('link');
@@ -19,7 +19,7 @@ export function useOrgBranding(orgName?: string, iconUrl?: string, titleSuffix =
             document.head.appendChild(link);
         }
         const prevHref = link.href;
-        link.href = iconUrl;
+        link.href = FaviconUrl;
         return () => { if (link) link.href = prevHref; };
-    }, [iconUrl]);
+    }, [FaviconUrl]);
 }

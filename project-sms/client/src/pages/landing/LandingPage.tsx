@@ -43,7 +43,7 @@ interface LandingData {
 interface OrgInfo {
   name: string;
   slug: string;
-  branding?: { logoUrl?: string };
+  branding?: { logoUrl?: string, faviconUrl?: string };
 }
 
 const LandingPage = () => {
@@ -70,7 +70,9 @@ const LandingPage = () => {
     fetchLandingData();
   }, []);
 
-  useOrgBranding(org?.branding?.logoUrl);
+  console.log(org)
+
+  useOrgBranding(org?.name, org?.branding?.faviconUrl);
 
   if (loading) {
     return (
