@@ -249,6 +249,7 @@ const AdminBrandingPage = () => {
         onSuccess: () => {
             showSnackbar('Branding updated successfully', 'success');
             queryClient.invalidateQueries({ queryKey: ['branding'] });
+            window.location.reload();
         },
         onError: (err: any) =>
             showSnackbar(err?.response?.data?.message || 'Failed to update branding', 'error'),

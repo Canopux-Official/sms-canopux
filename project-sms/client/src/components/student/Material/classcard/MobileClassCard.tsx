@@ -12,6 +12,7 @@ import {
   CalendarToday,
 } from "@mui/icons-material";
 import type { Node } from "../../../admin/Material/types/node";
+import { formatDate, getNameLabel } from "../utils/nodeHelpers";
 
 // Helper to get subject name
 // const getSubjectName = (node: Node): string => {
@@ -52,26 +53,14 @@ export const MobileClassCard: React.FC<{
   isHighlighted?: boolean;
 }> = ({ node, onClick, isHighlighted = false }) => {
 
-  // Safely extract display name from either a populated object or a raw string
-  const getNameLabel = (field: { name?: string } | string | null | undefined): string => {
-    if (!field) return '';
-    if (typeof field === 'object' && field.name) return field.name;
-    return typeof field === 'string' ? field : '';
-  };
-
   const streamLabel = getNameLabel(node.stream);
   const examLabel = getNameLabel(node.targetExam);
 
-  const createdDate = node.createdAt
-    ? new Date(node.createdAt).toLocaleDateString("en-US", {
-      month: "short",
-      day: "2-digit",
-      year: "numeric",
-    })
-    : null;
+  const createdDate = formatDate(node.createdAt);
 
   return (
     <Paper
+      id={`material-item-${node._id}`}
       onClick={onClick}
       elevation={0}
       sx={{

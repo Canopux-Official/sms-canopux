@@ -9,6 +9,7 @@ import {
   Alert,
   useMediaQuery,
   useTheme,
+  CircularProgress,
 } from '@mui/material';
 import { Warning as WarningIcon } from '@mui/icons-material';
 import type { Node } from '../types/node';
@@ -18,6 +19,7 @@ interface DeleteConfirmDialogProps {
   node: Node | null;
   onClose: () => void;
   onConfirm: () => void;
+  loading?: boolean;
 }
 
 const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
@@ -25,9 +27,15 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
   node,
   onClose,
   onConfirm,
+  loading = false
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const nodeName =
+    node?.heading ||
+    (node && typeof node.subject === 'object' ? node.subject?.name : '') ||
+    'this item';
 
   return (
     <Dialog
@@ -63,7 +71,7 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
             fontSize: '0.9375rem',
           }}
         >
-          Are you sure you want to delete <strong>{node?.heading}</strong>? This action cannot be undone.
+          Are you sure you want to delete <strong>{nodeName}</strong>? This action cannot be undone.
         </Typography>
         {node?.type === 'folder' && (
           <Alert
@@ -87,7 +95,7 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
       </DialogContent>
       <DialogActions sx={{ p: 2.5, gap: 1 }}>
         <Button
-          onClick={onClose}
+          onClick={onClose} disabled={loading}
           sx={{
             fontWeight: 600,
             textTransform: 'none',
@@ -100,6 +108,8 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
         <Button
           onClick={onConfirm}
           variant="contained"
+          disabled={loading}
+          startIcon={loading ? <CircularProgress size={16} color="inherit" /> : undefined}
           sx={{
             background: '#d32f2f',
             borderRadius: '8px',
@@ -110,10 +120,10 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
             },
           }}
         >
-          Delete
+          {loading ? 'Deleting…' : 'Delete'}
         </Button>
       </DialogActions>
-    </Dialog>
+    </Dialog >
   );
 };
 

@@ -146,7 +146,7 @@ const SubnodeHeader: React.FC<SubnodeHeaderProps> = ({
               wordBreak: 'break-word',
             }}
           >
-            {currentNode?.heading}
+            {breadcrumbPath[breadcrumbPath.length - 1]?.heading ?? currentNode?.heading}
           </Typography>
 
           {!isLoading && (
