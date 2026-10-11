@@ -21,20 +21,21 @@ export interface ReportStudent {
 
 export interface ReportInstitute {
   name: string;
-  tagline: string;
+  /** Optional. When empty, the tagline line is simply not drawn. */
+  tagline?: string;
+  /** Optional. The organization's logo URL (org.logoUrl). Loaded by reportCardExport.ts. */
+  logoUrl?: string;
   address?: string;
   phones?: string[];
   email?: string;
 }
 
 /**
- * Institute identity printed in the report card header. The name and tagline
- * match the institute crest (assets/logo.jpeg). Address, phone and e-mail are
- * filled in at runtime from the landing-page footer content when available.
+ * Fallback institute identity, only used when the organization's own details
+ * are not available. Pass the real org name / tagline from the caller.
  */
 export const DEFAULT_INSTITUTE: ReportInstitute = {
-  name: 'JJ Institute of Science',
-  tagline: 'In The Pursuit Of Excellence',
+  name: 'Student Management System',
 };
 
 export interface ReportCardData {
@@ -45,8 +46,13 @@ export interface ReportCardData {
 }
 
 export interface ReportCardAssets {
-  /** The institute logo image (the full logo.jpeg — the crest is cropped out of it here). */
+  /** The institute logo image. */
   crest: CanvasImageSource | null;
+  /**
+   * true  = `crest` is the organization's own logo (org.logoUrl) and is drawn whole, uncropped.
+   * false = `crest` is the legacy assets/logo.jpeg, from which the round crest is cropped (CREST_CROP).
+   */
+  crestIsFullLogo?: boolean;
   /** The student's profile photo, or null if unavailable. */
   photo: CanvasImageSource | null;
 }
@@ -100,9 +106,9 @@ export const getRemark = (pct: number): string => {
 };
 
 /**
- * Where the round crest sits inside src/assets/logo.jpeg (1080 x 1080 px).
- * The crop is scaled proportionally if the image is ever replaced by another
- * resolution of the same artwork.
+ * Where the round crest sits inside the LEGACY src/assets/logo.jpeg (1080 x 1080 px).
+ * Only used when assets.crestIsFullLogo is not true. The crop is scaled
+ * proportionally if the image is ever replaced by another resolution.
  */
 const CREST_CROP = { x: 125, y: 30, w: 806, h: 738, ref: 1080 };
 
@@ -264,7 +270,7 @@ const drawImageCover = (ctx: Ctx, img: CanvasImageSource, x: number, y: number, 
   ctx.restore();
 };
 
-/** Crop rectangle of the crest, in source-image pixels. */
+/** Crop rectangle of the legacy crest, in source-image pixels. */
 const crestRect = (img: CanvasImageSource) => {
   const { w: iw } = sourceSize(img);
   const k = iw / CREST_CROP.ref;
@@ -272,6 +278,20 @@ const crestRect = (img: CanvasImageSource) => {
 };
 
 const CREST_ASPECT = CREST_CROP.w / CREST_CROP.h;
+
+/**
+ * Source rectangle + aspect ratio of the logo to draw.
+ * - Organization logo (crestIsFullLogo): the whole image, no crop.
+ * - Legacy logo.jpeg: the cropped round crest.
+ */
+const crestGeom = (assets: ReportCardAssets) => {
+  const img = assets.crest as CanvasImageSource;
+  if (assets.crestIsFullLogo) {
+    const { w, h } = sourceSize(img);
+    return { sx: 0, sy: 0, sw: w, sh: h, aspect: w && h ? w / h : 1 };
+  }
+  return { ...crestRect(img), aspect: CREST_ASPECT };
+};
 
 const sectionTitle = (ctx: Ctx, title: string, x: number, y: number, w: number) => {
   ctx.textAlign = 'left';
@@ -352,31 +372,38 @@ export function drawReportCard(ctx: Ctx, data: ReportCardData, assets: ReportCar
 
   // ---- Watermark ---------------------------------------------------------
   if (assets.crest) {
-    const r = crestRect(assets.crest);
-    const wmH = 400;
-    const wmW = wmH * CREST_ASPECT;
+    const g = crestGeom(assets);
+    let wmH = 400;
+    let wmW = wmH * g.aspect;
+    if (wmW > 460) {
+      // very wide logos: limit the width and shrink the height accordingly
+      wmW = 460;
+      wmH = wmW / g.aspect;
+    }
     ctx.save();
     ctx.globalAlpha = 0.045;
-    ctx.globalCompositeOperation = 'multiply'; // white background of the JPEG disappears
-    ctx.drawImage(assets.crest, r.sx, r.sy, r.sw, r.sh, (PAGE_W - wmW) / 2, 470, wmW, wmH);
+    ctx.globalCompositeOperation = 'multiply'; // white background of a JPEG disappears
+    ctx.drawImage(assets.crest, g.sx, g.sy, g.sw, g.sh, (PAGE_W - wmW) / 2, 470 + (400 - wmH) / 2, wmW, wmH);
     ctx.restore();
   }
 
   // ---- Header ------------------------------------------------------------
   const headerTop = 46;
-  const crestH = 96;
+  const maxCrestH = 96;
+  const maxCrestW = 150;
   let crestW = 0;
   if (assets.crest) {
-    const r = crestRect(assets.crest);
-    crestW = crestH * CREST_ASPECT;
-    ctx.drawImage(assets.crest, r.sx, r.sy, r.sw, r.sh, M + 4, headerTop, crestW, crestH);
+    const g = crestGeom(assets);
+    crestW = Math.min(maxCrestW, maxCrestH * g.aspect);
+    const crestH = crestW / g.aspect;
+    ctx.drawImage(assets.crest, g.sx, g.sy, g.sw, g.sh, M + 4, headerTop + (maxCrestH - crestH) / 2, crestW, crestH);
   }
 
-  const textMaxW = PAGE_W - 2 * (M + 4 + (assets.crest ? crestW : 0) + 14);
+  const textMaxW = PAGE_W - 2 * (M + 4 + crestW + 14);
   const cx = PAGE_W / 2;
 
   // Institute name (letter-spaced serif, shrunk to fit)
-  const instName = institute.name.toUpperCase();
+  const instName = (institute.name || DEFAULT_INSTITUTE.name).toUpperCase();
   let nameSize = 28;
   const nameSpacing = 1.4;
   setFont(ctx, 700, nameSize, FONT_SERIF);
@@ -388,14 +415,17 @@ export function drawReportCard(ctx: Ctx, data: ReportCardData, assets: ReportCar
   ctx.textBaseline = 'alphabetic';
   drawSpaced(ctx, instName, cx, headerTop + 40, nameSpacing, 'center');
 
-  // Tagline
-  ctx.fillStyle = C.gold;
-  ctx.textAlign = 'center';
-  const tagline = fitText(ctx, institute.tagline, textMaxW, 400, 13, FONT_SERIF, 9, 'italic');
-  ctx.fillText(tagline, cx, headerTop + 62);
+  // Tagline (only drawn when the organization has one)
+  const taglineText = (institute.tagline || '').trim();
+  if (taglineText) {
+    ctx.fillStyle = C.gold;
+    ctx.textAlign = 'center';
+    const tagline = fitText(ctx, taglineText, textMaxW, 400, 13, FONT_SERIF, 9, 'italic');
+    ctx.fillText(tagline, cx, headerTop + 62);
+  }
 
   // Address / contact
-  let infoY = headerTop + 82;
+  let infoY = headerTop + (taglineText ? 82 : 66);
   ctx.fillStyle = C.muted;
   ctx.textAlign = 'center';
   if (institute.address && institute.address.trim()) {
@@ -752,8 +782,8 @@ export function drawReportCard(ctx: Ctx, data: ReportCardData, assets: ReportCar
       Math.abs(diff) < 0.005
         ? 'exactly in line with the class average'
         : diff > 0
-        ? `${fmt(Number(diff.toFixed(2)))} marks above the class average`
-        : `${fmt(Number(Math.abs(diff).toFixed(2)))} marks below the class average`;
+          ? `${fmt(Number(diff.toFixed(2)))} marks above the class average`
+          : `${fmt(Number(Math.abs(diff).toFixed(2)))} marks below the class average`;
     summary =
       `Scored ${fmt(mark.marksObtained)} out of ${fmt(mark.totalMarks)} (${fmt(pct)}%) and ranked ` +
       `${mark.rank ?? '—'} among ${mark.totalStudents} students, ${cmp}.`;

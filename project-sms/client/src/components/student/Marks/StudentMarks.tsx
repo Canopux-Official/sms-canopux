@@ -17,8 +17,8 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import { getStudentMarks, type StudentMarkRow } from './services/StudentMarksApi';
 import { getStudent, getLandingPage } from '../../../api/apiFunctions';
-import ReportCardDialog from './ReportCardDialog';
 import { DEFAULT_INSTITUTE, type ReportInstitute, type ReportStudent } from './utils/reportCardRenderer';
+import ReportCardDialog from './ReportCardDialog';
 
 // Rejects if the promise takes too long, so a slow request can never block the "View Report" button.
 const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> =>

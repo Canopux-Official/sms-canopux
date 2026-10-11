@@ -18,6 +18,7 @@ import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import type { StudentMarkRow } from './services/StudentMarksApi';
 import type { ReportInstitute, ReportStudent } from './utils/reportCardRenderer';
+import { DEFAULT_INSTITUTE } from './utils/reportCardRenderer';
 import {
   buildFileBaseName,
   buildPdfFromJpeg,
@@ -25,6 +26,7 @@ import {
   downloadBlob,
   renderReportCardCanvas,
 } from './utils/reportCardExport';
+import { validateToken } from '../../../api/apiFunctions';
 
 interface ReportCardDialogProps {
   open: boolean;
@@ -243,6 +245,36 @@ const ReportCardDialog: React.FC<ReportCardDialogProps> = ({ open, mark, student
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
+  const [org, setOrg] = useState<any>(null);
+  const [orgLoaded, setOrgLoaded] = useState(false);
+
+  useEffect(() => {
+    const fetchOrg = async () => {
+      try {
+        const res = await validateToken();
+        if (res.isValid) setOrg(res.organization ?? null);
+      } catch (err) {
+        console.error('Could not load organization:', err);
+      } finally {
+        setOrgLoaded(true);
+      }
+    };
+    fetchOrg();
+  }, []);
+
+
+  // Real organization details win over whatever the parent passed in
+  const mergedInstitute: ReportInstitute = useMemo(
+    () => ({
+      ...DEFAULT_INSTITUTE,
+      ...institute,
+      name: org?.name || institute?.name || DEFAULT_INSTITUTE.name,
+      tagline: org?.tagline || institute?.tagline || 'Empowering Excellence Through Knowledge & Growth',
+      logoUrl: org?.logoUrl || institute?.logoUrl,
+    }),
+    [institute, org]
+  );
+
   return (
     <Dialog
       open={open}
@@ -253,9 +285,11 @@ const ReportCardDialog: React.FC<ReportCardDialogProps> = ({ open, mark, student
       scroll="paper"
       aria-labelledby="report-card-title"
     >
-      {mark && <ReportCardContent mark={mark} student={student} institute={institute} onClose={onClose} />}
+      {mark && orgLoaded && (
+        <ReportCardContent mark={mark} student={student} institute={mergedInstitute} onClose={onClose} />
+      )}
     </Dialog>
   );
 };
 
-export default ReportCardDialog;
+export default ReportCardDialog
