@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Video media files (hosted on Cloudinary CDN)
+*.mp4
+*.webm
+*.mov
+*.avi
+*.mkv
+public/*.mp4

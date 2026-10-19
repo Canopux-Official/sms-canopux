@@ -19,7 +19,6 @@ export const FEATURES = [
   { col: 'bc-6', icon: '📚', iconCls: 'fi-cyan', title: 'Academic Management', desc: 'Subjects, tests, marks, grades, result publishing, and complete academic progress tracking.', preview: ['Test & exam management', 'Grade computation', 'Result publishing'] },
   { col: 'bc-3', icon: '🧑‍🏫', iconCls: 'fi-pink', title: 'Faculty', desc: 'Faculty profiles, schedules, workload, and attendance management.', preview: ['Schedule management'] },
   { col: 'bc-3', icon: '📢', iconCls: 'fi-white', title: 'Communication', desc: 'Announcements, notices, and institutional updates delivered instantly.', preview: ['Targeted broadcasts', 'Notice board'] },
-  { col: 'bc-3', icon: '🎓', iconCls: 'fi-blue', title: 'Admissions', desc: 'Manage applications, approvals, and student onboarding end-to-end.', preview: ['Application pipeline'] },
   { col: 'bc-3', icon: '🔒', iconCls: 'fi-green', title: 'Role-Based Access', desc: 'Granular permissions for Admin, Faculty, Students, and Parents.', preview: ['Custom roles', 'Audit logs'] },
 ];
 
