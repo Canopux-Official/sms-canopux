@@ -24,6 +24,7 @@ import {
     Description,
 } from "@mui/icons-material";
 import type { Node } from "../../../admin/Material/types/node";
+import { formatDate, getDisplayHeading } from "./nodeHelpers";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -84,27 +85,11 @@ const ModalContent: React.FC<NodeDetailModalProps & { isMobile: boolean }> = ({
 }) => {
     const isFolder = node.type === "folder";
 
-    const displayHeading = (node as any).subject
-        ? typeof (node as any).subject === "object"
-            ? (node as any).subject.name
-            : (node as any).subject
-        : node.heading;
+    const displayHeading = getDisplayHeading(node);
 
-    const createdDate = node.createdAt
-        ? new Date(node.createdAt).toLocaleDateString("en-US", {
-            month: "long",
-            day: "2-digit",
-            year: "numeric",
-        })
-        : null;
+    const createdDate = formatDate(node.createdAt, "long");
 
-    const dueDate = node.lastDate
-        ? new Date(node.lastDate).toLocaleDateString("en-US", {
-            month: "long",
-            day: "2-digit",
-            year: "numeric",
-        })
-        : null;
+    const dueDate = formatDate(node.lastDate, "long");
 
     const hasFiles = node.fileDetails && node.fileDetails.length > 0;
     const hasReferences = node.referenceDetails && node.referenceDetails.length > 0;
@@ -324,7 +309,7 @@ const ModalContent: React.FC<NodeDetailModalProps & { isMobile: boolean }> = ({
                                                 "&:hover": { bgcolor: "#eff6ff", borderColor: "#93c5fd" },
                                                 "&:active": { bgcolor: "#dbeafe" },
                                             }}
-                                            onClick={() => window.open(file.uploadLink, "_blank")}
+                                            onClick={() => file.uploadLink && window.open(file.uploadLink, "_blank", "noopener,noreferrer")}
                                         >
                                             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
                                                 <InsertDriveFile sx={{ fontSize: 18, color: "#3b82f6", flexShrink: 0 }} />
@@ -379,7 +364,7 @@ const ModalContent: React.FC<NodeDetailModalProps & { isMobile: boolean }> = ({
                                                 "&:hover": { bgcolor: "#fef3c7", borderColor: "#fbbf24" },
                                                 "&:active": { bgcolor: "#fde68a" },
                                             }}
-                                            onClick={() => window.open(ref.referenceLink, "_blank")}
+                                            onClick={() => ref.referenceLink && window.open(ref.referenceLink, "_blank", "noopener,noreferrer")}
                                         >
                                             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
                                                 <LinkIcon sx={{ fontSize: 18, color: "#d97706", flexShrink: 0 }} />

@@ -1,4 +1,4 @@
-import logoUrl from '../../../../assets/logo.jpeg';
+import defaultLogo from '../../../../assets/sms-logo.png';
 import { PAGE_H, PAGE_W, drawReportCard } from './reportCardRenderer';
 import type { ReportCardData } from './reportCardRenderer';
 
@@ -52,11 +52,24 @@ const ensureFonts = async (): Promise<void> => {
 export const renderReportCardCanvas = async (data: ReportCardData): Promise<HTMLCanvasElement> => {
   await ensureFonts();
 
-  const [crest, photo] = await Promise.all([
-    loadImageSafe(logoUrl, false, 10000),
+  const orgLogoUrl = data.institute?.logoUrl;
+
+  const [orgCrest, photo] = await Promise.all([
+    // The organization's own logo. crossOrigin is required so the canvas is not
+    // tainted (the logo server must send CORS headers, e.g. Cloudinary does).
+    loadImageSafe(orgLogoUrl, true, 10000),
+
     // crossOrigin is required so the canvas is not tainted (Cloudinary sends CORS headers).
     loadImageSafe(data.student?.profilePhoto, true, 8000),
   ]);
+
+  if (orgLogoUrl && !orgCrest) {
+    console.warn('Organization logo could not be loaded (check URL / CORS), using the default logo:', orgLogoUrl);
+  }
+
+  // Fall back to the bundled logo (cropped crest) only if the org logo is missing or failed.
+  const crest = orgCrest ?? (await loadImageSafe(defaultLogo, false, 10000));
+  const crestIsFullLogo = !!orgCrest;
 
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(PAGE_W * RENDER_SCALE);
@@ -65,7 +78,7 @@ export const renderReportCardCanvas = async (data: ReportCardData): Promise<HTML
   if (!ctx) throw new Error('Canvas is not supported in this browser.');
 
   ctx.scale(RENDER_SCALE, RENDER_SCALE);
-  drawReportCard(ctx, data, { crest, photo });
+  drawReportCard(ctx, data, { crest, crestIsFullLogo, photo });
   return canvas;
 };
 
@@ -125,13 +138,13 @@ export const buildPdfFromJpeg = (jpeg: Uint8Array, imgW: number, imgH: number, t
   beginObj(3);
   push(
     `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${A4_W_PT} ${A4_H_PT}] ` +
-      '/Resources << /XObject << /Im0 4 0 R >> /ProcSet [/PDF /ImageC] >> /Contents 5 0 R >>\nendobj\n'
+    '/Resources << /XObject << /Im0 4 0 R >> /ProcSet [/PDF /ImageC] >> /Contents 5 0 R >>\nendobj\n'
   );
 
   beginObj(4);
   push(
     `<< /Type /XObject /Subtype /Image /Width ${imgW} /Height ${imgH} /ColorSpace /DeviceRGB ` +
-      `/BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`
+    `/BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`
   );
   push(jpeg);
   push('\nendstream\nendobj\n');

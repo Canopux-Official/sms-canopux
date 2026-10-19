@@ -45,3 +45,10 @@ yarn.lock
 # Ignore any files ending with .cache
 *.cache
 seedDb.ts
+
+# Large media & video files (hosted on Cloudinary CDN)
+*.mp4
+*.webm
+*.mov
+*.avi
+*.mkv

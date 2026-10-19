@@ -17,7 +17,7 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 
 import { RootContainer, StyledDrawer, StyledAppBar, MainContent, LogoSection } from './StudentLayout.styles';
-import LogoImg from '../../assets/logo.jpeg';
+import LogoImg from '../../assets/sms-logo.png';
 import { getStudentProfile, logoutUser, validateToken, type OrganizationInfo } from '../../api/apiFunctions';
 import { useOrgBranding } from '../../hooks/useOrgBranding';
 

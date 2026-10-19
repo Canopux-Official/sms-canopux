@@ -37,6 +37,7 @@ import platformOrganizationRoutes from './routes/platform/organizationRoutes';
 import platformPlanRoutes from './routes/platform/planRoutes';
 import platformInvoiceRoutes from './routes/platform/invoiceRoutes';
 import adminBillingRoutes from './routes/admin/admin.billingRoutes';
+import adminSettingsRoutes from './routes/admin/admin.BrandingRoutes';
 
 // -----------------------------------------------------------------------
 // App setup
@@ -140,6 +141,7 @@ app.use('/admin/attendance', adminAttendanceRoutes);
 app.use('/admin/control', adminControlRoutes);
 app.use('/admin/landingPage', adminLandingPageRoutes);
 app.use('/admin/marks', adminMarksRoutes);
+app.use('/admin/branding', adminSettingsRoutes);
 
 // Student
 app.use('/student/studentProfile', studentProfileRoutes);

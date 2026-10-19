@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { Node } from '../types/node';
 import {
   createFolder,
@@ -13,6 +13,9 @@ interface SnackbarState {
   severity: 'success' | 'error' | 'warning' | 'info';
 }
 
+const errorMessage = (error: any, fallback: string): string =>
+  error?.response?.data?.message || error?.message || fallback;
+
 export const useNodeOperations = (
   localNodes: Node[],
   setLocalNodes: React.Dispatch<React.SetStateAction<Node[]>>,
@@ -24,13 +27,27 @@ export const useNodeOperations = (
     message: '',
     severity: 'info',
   });
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Always points at the newest list, so a slow request never works on an old copy.
+  const nodesRef = useRef<Node[]>(localNodes);
+  nodesRef.current = localNodes;
 
   const showSnackbar = (message: string, severity: SnackbarState['severity']) => {
     setSnackbar({ open: true, message, severity });
   };
 
-  const handleCreateNode = async (nodeData: Partial<Node>) => {
+  const commit = (updatedNodes: Node[]) => {
+    nodesRef.current = updatedNodes;
+    setLocalNodes(updatedNodes);
+    onNodesUpdate?.(updatedNodes);
+  };
+
+  const handleCreateNode = async (nodeData: Partial<Node>): Promise<boolean> => {
+    if (isSaving) return false;
+    setIsSaving(true);
     try {
+      // Payload is unchanged on purpose: the backend receives what it receives today.
       const newNode: Node = {
         _id: Date.now().toString(),
         heading: nodeData.heading!,
@@ -53,28 +70,31 @@ export const useNodeOperations = (
 
       if ((result as { success: string }).success) {
         const createdNode = (result as { data: Node }).data;
-        const updatedNodes = [...localNodes, createdNode];
-        setLocalNodes(updatedNodes);
-        onNodesUpdate?.(updatedNodes);
+        commit([...nodesRef.current, createdNode]);
 
         const breadcrumb = (result as any).breadcrumb;
-        const message = breadcrumb
-          ? `Created: ${breadcrumb}`
-          : ((result as { message: string }).message) || 'Folder created successfully';
-
-        showSnackbar(message, 'success');
-      } else {
         showSnackbar(
-          ((result as { message: string }).message) || 'Failed to create folder',
-          'error'
+          breadcrumb
+            ? `Created: ${breadcrumb}`
+            : (result as { message: string }).message || 'Folder created successfully',
+          'success'
         );
+        return true;
       }
+
+      showSnackbar((result as { message: string }).message || 'Failed to create folder', 'error');
+      return false;
     } catch (error: any) {
-      showSnackbar(error.message || 'Error creating folder', 'error');
+      showSnackbar(errorMessage(error, 'Error creating folder'), 'error');
+      return false;
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleSaveEdit = async (editingNode: Node, nodeData: Partial<Node>) => {
+  const handleSaveEdit = async (editingNode: Node, nodeData: Partial<Node>): Promise<boolean> => {
+    if (isSaving) return false;
+    setIsSaving(true);
     try {
       const updatedNode: Node = {
         ...editingNode,
@@ -99,77 +119,79 @@ export const useNodeOperations = (
 
         if (headingChanged && (result as any).pathsUpdated) {
           const refreshedChildren = await getChildrenByParentId(currentNodeId);
-          const updatedNodes = localNodes.map((node) => {
-            if (node._id === editingNode._id) return returnedData;
-            const refreshedNode = refreshedChildren.find((child) => child._id === node._id);
-            return refreshedNode || node;
-          });
-
-          setLocalNodes(updatedNodes);
-          onNodesUpdate?.(updatedNodes);
-        } else {
-          const updatedNodes = localNodes.map((node) =>
-            node._id === editingNode._id ? returnedData : node
+          commit(
+            nodesRef.current.map((node) => {
+              if (node._id === editingNode._id) return returnedData;
+              const refreshedNode = refreshedChildren.find((child) => child._id === node._id);
+              return refreshedNode || node;
+            })
           );
-          setLocalNodes(updatedNodes);
-          onNodesUpdate?.(updatedNodes);
+        } else {
+          commit(
+            nodesRef.current.map((node) => (node._id === editingNode._id ? returnedData : node))
+          );
         }
 
         const breadcrumb = (result as any).breadcrumb;
-        const message = breadcrumb
-          ? `Updated: ${breadcrumb}`
-          : ((result as { message: string }).message) || 'Folder updated successfully';
-
-        showSnackbar(message, 'success');
-      } else {
         showSnackbar(
-          ((result as { message: string }).message) || 'Failed to update folder',
-          'error'
+          breadcrumb
+            ? `Updated: ${breadcrumb}`
+            : (result as { message: string }).message || 'Folder updated successfully',
+          'success'
         );
+        return true;
       }
+
+      showSnackbar((result as { message: string }).message || 'Failed to update folder', 'error');
+      return false;
     } catch (error: any) {
-      showSnackbar(error.message || 'Error updating folder', 'error');
-    }
-  };
-
-  const handleConfirmDelete = async (deletingNodeId: string) => {
-    try {
-      const result = await deleteSubFolder(deletingNodeId);
-
-      if (result.success) {
-        const updatedNodes = removeNodeAndChildren(deletingNodeId);
-        setLocalNodes(updatedNodes);
-        onNodesUpdate?.(updatedNodes);
-
-        showSnackbar(result.message || 'Folder deleted successfully', 'success');
-      } else {
-        showSnackbar(
-          result.message || 'Failed to delete folder',
-          result.message?.includes('subfolders') ? 'warning' : 'error'
-        );
-      }
-    } catch (error: any) {
-      showSnackbar(error.message || 'Error deleting folder', 'error');
+      showSnackbar(errorMessage(error, 'Error updating folder'), 'error');
+      return false;
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const removeNodeAndChildren = (nodeId: string): Node[] => {
-    const deleteNodeAndChildren = (id: string): string[] => {
-      const idsToDelete = [id];
-      const children = localNodes.filter((node) => node.parentId === id);
-      children.forEach((child) => {
-        idsToDelete.push(...deleteNodeAndChildren(child._id));
-      });
-      return idsToDelete;
+    const all = nodesRef.current;
+    const collect = (id: string): string[] => {
+      const ids = [id];
+      all.filter((node) => node.parentId === id).forEach((child) => ids.push(...collect(child._id)));
+      return ids;
     };
+    const idsToDelete = collect(nodeId);
+    return all.filter((node) => !idsToDelete.includes(node._id));
+  };
 
-    const idsToDelete = deleteNodeAndChildren(nodeId);
-    return localNodes.filter((node) => !idsToDelete.includes(node._id));
+  const handleConfirmDelete = async (deletingNodeId: string): Promise<boolean> => {
+    if (isSaving) return false;
+    setIsSaving(true);
+    try {
+      const result = await deleteSubFolder(deletingNodeId);
+
+      if (result.success) {
+        commit(removeNodeAndChildren(deletingNodeId));
+        showSnackbar(result.message || 'Folder deleted successfully', 'success');
+        return true;
+      }
+
+      showSnackbar(
+        result.message || 'Failed to delete folder',
+        result.message?.includes('subfolders') ? 'warning' : 'error'
+      );
+      return false;
+    } catch (error: any) {
+      showSnackbar(errorMessage(error, 'Error deleting folder'), 'error');
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return {
     snackbar,
     setSnackbar,
+    isSaving,
     handleCreateNode,
     handleSaveEdit,
     handleConfirmDelete,

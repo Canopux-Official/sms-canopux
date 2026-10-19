@@ -17,6 +17,7 @@ import {
   Paper,
   Divider,
   CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -34,7 +35,8 @@ import { getAllSubjects } from '../../../../api/apiFunctions';
 interface NodeDialogFormProps {
   open: boolean;
   onClose: () => void;
-  onSave: (node: Partial<Node>) => void;
+  onSave: (node: Partial<Node>) => void | boolean | Promise<void | boolean>;
+  saving?: boolean;
   initialData?: Partial<Node>;
   title: string;
   parentId: string;
@@ -59,6 +61,7 @@ const NodeDialogForm: React.FC<NodeDialogFormProps> = ({
   title,
   parentId,
   depth = 0,
+  saving = false
 }) => {
   const isEdit = !!initialData._id;
   const isFirstDepth = depth === 1; // Check if this is first depth (child of root)
@@ -90,6 +93,10 @@ const NodeDialogForm: React.FC<NodeDialogFormProps> = ({
   const [loadingSubjects, setLoadingSubjects] = useState(false);
   const [selectedSubjectId, setSelectedSubjectId] = useState('');
   const [useManualHeading, setUseManualHeading] = useState(false);
+
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
+  const busy = submitting || saving;
 
   const initialDataRef = useRef(initialData);
 
@@ -151,6 +158,7 @@ const NodeDialogForm: React.FC<NodeDialogFormProps> = ({
       setCurrentTag('');
       setNewFile({ fileName: '', uploadLink: '' });
       setNewReference({ fileName: '', referenceLink: '' });
+      setFormError('');
 
       // Set subject selection state
       if (hasSubject) {
@@ -231,31 +239,26 @@ const NodeDialogForm: React.FC<NodeDialogFormProps> = ({
   };
 
   const handleRemoveReference = (index: number) => {
-    const fileToRemove = formData.referenceDetails?.[index];
-    console.log(fileToRemove)
     setFormData({
       ...formData,
       referenceDetails: (formData.referenceDetails || []).filter((_, i) => i !== index),
     });
   };
 
-  const handleSave = () => {
-    // console.log('handleSave called with formData:', formData);
-    // console.log('selectedSubjectId:', selectedSubjectId);
-    // console.log('useManualHeading:', useManualHeading);
-    // console.log('isFirstDepth:', isFirstDepth);
+  const handleSave = async () => {
+    if (busy) return;
 
-    // Validation: Either subject or heading must be present
     if (isFirstDepth && !formData.subject && !formData.heading?.trim()) {
-      alert('Please select a subject or enter a heading');
+      setFormError('Please select a subject or enter a heading');
       return;
     }
-
     if (!isFirstDepth && !formData.heading?.trim()) {
-      alert('Please enter a heading');
+      setFormError('Please enter a heading');
       return;
     }
+    setFormError('');
 
+    // --- build dataToSave exactly as you do today (leave this block untouched) ---
     const dataToSave: Partial<Node> = {
       type: formData.type,
       tags: formData.tags?.length ? formData.tags : undefined,
@@ -264,28 +267,27 @@ const NodeDialogForm: React.FC<NodeDialogFormProps> = ({
       description: formData.description || undefined,
       lastDate: formData.lastDate || undefined,
     };
-
-    // Only add parentId for create operations
     if (!isEdit) {
       dataToSave.parentId = parentId;
     }
-
-    // Add subject OR heading based on what's selected
     if (isFirstDepth) {
       if (formData.subject) {
-        dataToSave.subject = formData.subject || formData.subject;
-        // Don't send heading if subject is set
+        dataToSave.subject = formData.subject;
       } else if (formData.heading?.trim()) {
         dataToSave.heading = formData.heading.trim();
-        // Don't send subject if heading is set
       }
     } else {
       dataToSave.heading = formData.heading?.trim();
     }
+    // --- end of unchanged block ---
 
-    // console.log('dataToSave:', dataToSave);
-    onSave(dataToSave);
-    onClose();
+    setSubmitting(true);
+    try {
+      const ok = await onSave(dataToSave);
+      if (ok !== false) onClose(); // a parent that returns nothing still closes, as before
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -318,18 +320,20 @@ const NodeDialogForm: React.FC<NodeDialogFormProps> = ({
     /^(https?:\/\/)[\w\-]+(\.[\w\-]+)+(\/\S*)?$/.test(url.trim())
 
   return (
-    <Dialog open={open} onClose={handleCancel} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={busy ? undefined : handleCancel} maxWidth="md" fullWidth>
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
           {title}
         </Typography>
-        <IconButton onClick={handleCancel}>
+        <IconButton onClick={handleCancel} disabled={busy}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
 
       <DialogContent dividers sx={{ maxHeight: '70vh' }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
+          {formError && <Alert severity="error">{formError}</Alert>}
+          {/* Type Selection */}
           {/* Type Selection */}
           <FormControl fullWidth disabled={isFirstDepth}>
             <InputLabel>Type</InputLabel>
@@ -650,11 +654,14 @@ const NodeDialogForm: React.FC<NodeDialogFormProps> = ({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={handleCancel} variant="outlined">
-          Cancel
-        </Button>
-        <Button onClick={handleSave} variant="contained" disabled={isSaveDisabled()}>
-          {isEdit ? 'Save Changes' : 'Create'}
+        <Button onClick={handleCancel} variant="outlined" disabled={busy}>Cancel</Button>
+        <Button
+          onClick={handleSave}
+          variant="contained"
+          disabled={isSaveDisabled() || busy}
+          startIcon={busy ? <CircularProgress size={16} color="inherit" /> : undefined}
+        >
+          {busy ? (isEdit ? 'Saving…' : 'Creating…') : isEdit ? 'Save Changes' : 'Create'}
         </Button>
       </DialogActions>
     </Dialog>

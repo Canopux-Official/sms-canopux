@@ -13,48 +13,8 @@ import {
     CalendarToday,
 } from "@mui/icons-material";
 import type { Node } from "../../../admin/Material/types/node";
+import { formatDate, getNameLabel } from "../utils/nodeHelpers";
 
-// Helper to get subject name
-// const getSubjectName = (node: Node): string => {
-//     if ((node as any).subject) {
-//         return typeof (node as any).subject === "object"
-//             ? (node as any).subject.name
-//             : (node as any).subject;
-//     }
-//     return node.heading || "Course";
-// };
-
-// const extractClassInfo = (heading: string | null | undefined): string => {
-//     // Handle null or undefined heading
-//     if (!heading || typeof heading !== 'string') {
-//         return "CLS";
-//     }
-
-//     const patterns = [
-//         /class\s*(\d+)/i,
-//         /grade\s*(\d+)/i,
-//         /(\d+)(?:st|nd|rd|th)\s*(?:class|grade|standard)?/i,
-//         /std\s*(\d+)/i,
-//     ];
-
-//     for (const pattern of patterns) {
-//         const match = heading.match(pattern);
-//         if (match) {
-//             return `Class ${match[1]}`;
-//         }
-//     }
-
-//     const words = heading.split(/\s+/);
-//     if (words.length > 0) {
-//         const firstWord = words[0];
-//         if (/^\d+$/.test(firstWord)) {
-//             return `Class ${firstWord}`;
-//         }
-//         return firstWord.substring(0, 3).toUpperCase();
-//     }
-
-//     return "CLS";
-// };
 
 export const ClassRow: React.FC<{
     node: Node;
@@ -63,25 +23,16 @@ export const ClassRow: React.FC<{
 }> = ({ node, onClick, isHighlighted = false }) => {
 
     // Safely extract display name from either a populated object or a raw string
-    const getNameLabel = (field: { name?: string } | string | null | undefined): string => {
-        if (!field) return '';
-        if (typeof field === 'object' && field.name) return field.name;
-        return typeof field === 'string' ? field : '';
-    };
+
 
     const streamLabel = getNameLabel(node.stream);
     const examLabel = getNameLabel(node.targetExam);
 
-    const createdDate = node.createdAt
-        ? new Date(node.createdAt).toLocaleDateString("en-US", {
-            month: "short",
-            day: "2-digit",
-            year: "numeric",
-        })
-        : null;
+    const createdDate = formatDate(node.createdAt, "long");
 
     return (
         <TableRow
+            id={`material-item-${node._id}`}
             onClick={onClick}
             sx={{
                 cursor: "pointer",

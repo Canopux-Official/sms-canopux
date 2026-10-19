@@ -21,8 +21,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Skeleton,
   type SelectChangeEvent,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -44,6 +44,7 @@ import EditClassDialog from '../DialogForm/EditClassDialog';
 import { getTargetExams, getActiveStreams } from '../../../../api/apiFunctions';
 import ClassFilters from '../classcardUtils/ClassFilters';
 import ClassTableRow from '../classcardUtils/ClassTableRow';
+import { ClassTableSkeleton } from '../utils/TableSkeleton';
 
 const CLASS_OPTIONS = [
   { value: '9', label: 'Class 9' },
@@ -70,6 +71,8 @@ const ShowClass: React.FC = () => {
   const [allNodes, setAllNodes] = useState<Node[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [isLoadingClasses, setIsLoadingClasses] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Dialog states
   const [openClassSelectionDialog, setOpenClassSelectionDialog] = useState(false);
@@ -155,20 +158,17 @@ const ShowClass: React.FC = () => {
   const rootClasses = allNodes.filter((node) => node.parentId === null);
 
   // Safely extract stream/targetExam name from populated object or raw string/ID
-  const getNameFromField = (field: { _id?: string; name?: string } | string | null | undefined): string => {
+  const getNameFromField = (
+    field: { _id?: string; name?: string } | string | null | undefined,
+    list: { _id: string; name: string }[]
+  ): string => {
     if (!field) return '';
-    if (typeof field === 'object' && field.name) return field.name;
-    if (typeof field === 'string') {
-      // It's a raw ID string — look it up in the loaded lists
-      return field;
-    }
-    return '';
+    if (typeof field === 'object') return field.name || '';
+    return list.find((item) => item._id === field)?.name || field;
   };
 
-  // console.log(allNodes[0])
-
-  const getTargetExamName = (field: typeof allNodes[0]['targetExam']): string => getNameFromField(field as { _id?: string; name?: string } | string);
-  const getStreamName = (field: typeof allNodes[0]['stream']): string => getNameFromField(field as { _id?: string; name?: string } | string | null);
+  const getTargetExamName = (field: Node['targetExam']): string => getNameFromField(field, targetExams);
+  const getStreamName = (field: Node['stream']): string => getNameFromField(field, streams);
 
 
 
@@ -223,10 +223,12 @@ const ShowClass: React.FC = () => {
   };
 
   const handleConfirmCreateClass = async () => {
-    if (!selectedClassType || !selectedTargetExamId) return;
+    if (!selectedClassType || !selectedTargetExamId || isCreating) return;
 
-    const className = CLASS_OPTIONS.find((opt) => opt.value === selectedClassType)?.value || selectedClassType;
+    const className =
+      CLASS_OPTIONS.find((opt) => opt.value === selectedClassType)?.value || selectedClassType;
 
+    setIsCreating(true);
     try {
       const response = await createOrFetchClass(className, selectedTargetExamId, selectedStreamId);
 
@@ -234,29 +236,38 @@ const ShowClass: React.FC = () => {
         throw new Error(response.message || 'Failed to create class');
       }
 
+      const created = response.data as Partial<Node> & { _id: string };
+      const exam = targetExams.find((e) => e._id === selectedTargetExamId);
+      const stream = streams.find((s) => s._id === selectedStreamId);
+
       const newNode: Node = {
-        _id: (response.data as { _id: string })._id,
         heading: '',
-        targetExam: selectedTargetExamId,
-        stream: selectedStreamId,
-        type: 'folder',
-        classType: className,
-        parentId: null,
         description: '',
         tags: [],
         fileDetails: [],
         referenceDetails: [],
+        type: 'folder',
+        parentId: null,
+        ...created,
+        // show names immediately, using the lists already loaded on this page
+        targetExam: exam ? { _id: exam._id, name: exam.name } : selectedTargetExamId,
+        stream: stream ? { _id: stream._id, name: stream.name } : selectedStreamId || null,
+        classType: created.classType || className,
       };
 
-      setAllNodes([...allNodes, newNode]);
-      handleCloseConfirmDialog();
+      // add, or replace if the server returned a class that already exists
+      setAllNodes((prev) =>
+        prev.some((n) => n._id === newNode._id)
+          ? prev.map((n) => (n._id === newNode._id ? newNode : n))
+          : [...prev, newNode]
+      );
 
+      handleCloseConfirmDialog();
       setSnackbar({
         open: true,
         message: response.message || 'Class created successfully',
         severity: 'success',
       });
-      window.location.reload();
     } catch (error: unknown) {
       console.error('Error creating class:', error);
       setSnackbar({
@@ -264,6 +275,8 @@ const ShowClass: React.FC = () => {
         message: error instanceof Error ? error.message : 'Error creating class',
         severity: 'error',
       });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -344,6 +357,7 @@ const ShowClass: React.FC = () => {
 
   const handleConfirmDelete = async () => {
     if (!deletingNodeId) return;
+    setIsDeleting(true);
 
     try {
       const result = await deleteSubFolder(deletingNodeId);
@@ -373,6 +387,9 @@ const ShowClass: React.FC = () => {
         message: error instanceof Error ? error.message : 'Error deleting folder',
         severity: 'error',
       });
+    }
+    finally {
+      setIsDeleting(false);
     }
   };
 
@@ -479,13 +496,7 @@ const ShowClass: React.FC = () => {
 
         {/* Table */}
         {isLoadingClasses ? (
-          <Paper elevation={0} sx={{ borderRadius: '12px', overflow: 'hidden' }}>
-            <Box sx={{ p: 3 }}>
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} height={60} sx={{ mb: 1 }} />
-              ))}
-            </Box>
-          </Paper>
+          <ClassTableSkeleton rows={5} />
         ) : filteredClasses.length === 0 ? (
           <Paper
             elevation={0}
@@ -629,7 +640,12 @@ const ShowClass: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={openConfirmDialog} onClose={handleCloseConfirmDialog} maxWidth="sm" fullWidth>
+      <Dialog
+        open={openConfirmDialog}
+        onClose={isCreating ? undefined : handleCloseConfirmDialog}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Confirm Class Creation</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -650,9 +666,14 @@ const ShowClass: React.FC = () => {
           </Paper>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button onClick={handleCloseConfirmDialog}>Cancel</Button>
-          <Button onClick={handleConfirmCreateClass} variant="contained">
-            Create Class
+          <Button onClick={handleCloseConfirmDialog} disabled={isCreating}>Cancel</Button>
+          <Button
+            onClick={handleConfirmCreateClass}
+            variant="contained"
+            disabled={isCreating}
+            startIcon={isCreating ? <CircularProgress size={16} color="inherit" /> : undefined}
+          >
+            {isCreating ? 'Creating…' : 'Create Class'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -662,7 +683,7 @@ const ShowClass: React.FC = () => {
           open={openEditDialog}
           onClose={handleCloseEditDialog}
           onSave={handleSaveEdit}
-          initialClassType={editingNode.heading}
+          initialClassType={editingNode.classType || editingNode.heading}
           initialTargetExamId={
             typeof editingNode.targetExam === 'object' && editingNode.targetExam
               ? (editingNode.targetExam as { _id: string })._id
@@ -697,8 +718,8 @@ const ShowClass: React.FC = () => {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3 }}>
           <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
-          <Button onClick={handleConfirmDelete} variant="contained" color="error">
-            Delete
+          <Button onClick={handleConfirmDelete} disabled={isDeleting} variant="contained" color="error">
+            {isDeleting ? 'Deleting…' : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>
