@@ -7,8 +7,10 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import {
   checkSlugAvailability,
+  checkUsernameAvailability,
   createOrganization,
 } from '../api/platformApiFunctions';
+import { USERNAME_REGEX, sanitizeUsername } from '../utils/username';
 import { usePlatformAuth } from '../context/PlatformAuthContext';
 import AppShell from '../components/AppShell';
 
@@ -26,6 +28,7 @@ function slugify(value: string): string {
 const PHONE_REGEX = /^[0-9]{10}$/;
 
 type SlugStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
+type UsernameStatus = SlugStatus;
 
 export default function CreateOrganization() {
   const navigate = useNavigate();
@@ -39,16 +42,20 @@ export default function CreateOrganization() {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
+  const [username, setUsername] = useState('');
+  const [usernameTouched, setUsernameTouched] = useState(false);
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
 
   const [slugStatus, setSlugStatus] = useState<SlugStatus>('idle');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
+  const usernameDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState<{ slug: string; emailed: boolean } | null>(null);
+  const [success, setSuccess] = useState<{ slug: string; username: string; emailed: boolean } | null>(null);
 
   useEffect(() => {
     if (!slugTouched) {
@@ -78,6 +85,44 @@ export default function CreateOrganization() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [slug, handleSessionExpired]);
 
+  // Suggest the username from the slug until the admin edits it themselves.
+  useEffect(() => {
+    if (!usernameTouched) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- derived value, syncing two controlled fields
+      setUsername(sanitizeUsername(slug));
+    }
+  }, [slug, usernameTouched]);
+
+  useEffect(() => {
+    if (usernameDebounceRef.current) clearTimeout(usernameDebounceRef.current);
+    if (username.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- derived validity state, no async work needed
+      setUsernameStatus('idle');
+      return;
+    }
+    if (!USERNAME_REGEX.test(username)) {
+      setUsernameStatus('invalid');
+      return;
+    }
+    usernameDebounceRef.current = setTimeout(async () => {
+      setUsernameStatus('checking');
+      const result = await checkUsernameAvailability(username);
+      if (result.success && result.data) {
+        setUsernameStatus(result.data.available ? 'available' : 'taken');
+      } else if (result.status === 401) {
+        handleSessionExpired();
+      } else {
+        setUsernameStatus('idle');
+      }
+    }, 450);
+    return () => { if (usernameDebounceRef.current) clearTimeout(usernameDebounceRef.current); };
+  }, [username, handleSessionExpired]);
+
+  const handleUsernameChange = (value: string) => {
+    setUsernameTouched(true);
+    setUsername(sanitizeUsername(value));
+  };
+
   const handleSlugChange = (value: string) => {
     setSlugTouched(true);
     setSlug(slugify(value));
@@ -88,6 +133,7 @@ export default function CreateOrganization() {
     setSubmitError(null);
 
     if (slugStatus !== 'available') return setSubmitError('Please choose an available subdomain slug before continuing.');
+    if (usernameStatus !== 'available') return setSubmitError('Please choose an available username before continuing.');
     if (!PHONE_REGEX.test(contactPhone.trim())) {
       return setSubmitError('Contact phone must be exactly 10 digits (this becomes the admin login username).');
     }
@@ -96,12 +142,13 @@ export default function CreateOrganization() {
     const result = await createOrganization({
       name: name.trim(),
       slug,
+      username,
       primaryContact: { name: contactName.trim(), email: contactEmail.trim(), phone: contactPhone.trim() },
     });
     setSubmitting(false);
 
     if (result.success && result.data) {
-      setSuccess({ slug: result.data.organization.slug, emailed: result.data.adminCredentialsEmailed });
+      setSuccess({ slug: result.data.organization.slug, username: result.data.organization.username, emailed: result.data.adminCredentialsEmailed });
     } else if (result.status === 401) {
       handleSessionExpired();
     } else {
@@ -118,6 +165,9 @@ export default function CreateOrganization() {
             <Typography variant="h5" fontWeight={700} gutterBottom>Organization created</Typography>
             <Typography variant="body1" sx={{ mb: 1 }}>
               <strong>{success.slug}.sms.canopux.org</strong> is ready to go.
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 1 }}>
+              Mobile app username: <strong>{success.username}</strong>
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               {success.emailed
@@ -147,6 +197,23 @@ export default function CreateOrganization() {
     }
   })();
 
+  const usernameHelperText = (() => {
+    switch (usernameStatus) {
+      case 'checking': return 'Checking availability…';
+      case 'available': return `"${username}" is available`;
+      case 'taken': return 'This username is already taken';
+      case 'invalid': return '3–32 characters: lowercase letters, numbers, hyphens, underscores (start and end with a letter or number)';
+      default: return 'Unique ID the institute uses in the mobile app (no subdomain there). Sent in the credentials email.';
+    }
+  })();
+
+  const usernameAdornment = (() => {
+    if (usernameStatus === 'checking') return <CircularProgress size={18} />;
+    if (usernameStatus === 'available') return <CheckCircleIcon color="success" fontSize="small" />;
+    if (usernameStatus === 'taken' || usernameStatus === 'invalid') return <CancelIcon color="error" fontSize="small" />;
+    return null;
+  })();
+
   const slugAdornment = (() => {
     if (slugStatus === 'checking') return <CircularProgress size={18} />;
     if (slugStatus === 'available') return <CheckCircleIcon color="success" fontSize="small" />;
@@ -172,6 +239,12 @@ export default function CreateOrganization() {
                 slotProps={{ input: { endAdornment: slugAdornment ? <InputAdornment position="end">{slugAdornment}</InputAdornment> : undefined } }}
               />
 
+              <TextField
+                label="Username (Mobile App)" value={username} onChange={(e) => handleUsernameChange(e.target.value)} required fullWidth
+                helperText={usernameHelperText} error={usernameStatus === 'taken' || usernameStatus === 'invalid'}
+                slotProps={{ input: { endAdornment: usernameAdornment ? <InputAdornment position="end">{usernameAdornment}</InputAdornment> : undefined } }}
+              />
+
               <Typography variant="subtitle1" fontWeight={700} sx={{ pt: 1 }}>Primary Contact</Typography>
 
               <TextField label="Contact Name" value={contactName} onChange={(e) => setContactName(e.target.value)} required fullWidth />
@@ -186,7 +259,7 @@ export default function CreateOrganization() {
                 error={contactPhone.length > 0 && !PHONE_REGEX.test(contactPhone)}
               />
 
-              <Button type="submit" variant="contained" size="large" disabled={submitting || slugStatus !== 'available'} fullWidth>
+              <Button type="submit" variant="contained" size="large" disabled={submitting || slugStatus !== 'available' || usernameStatus !== 'available'} fullWidth>
                 {submitting ? <CircularProgress size={24} color="inherit" /> : 'Create Organization'}
               </Button>
             </Stack>

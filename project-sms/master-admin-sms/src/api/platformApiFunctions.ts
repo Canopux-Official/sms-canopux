@@ -80,6 +80,8 @@ export interface OrganizationSummary {
   id: string;
   name: string;
   slug: string;
+  /** Mobile-app institute identifier; null for institutes created before usernames existed. */
+  username?: string | null;
   status: 'active' | 'suspended' | 'cancelled';
   subscriptionStatus: string;
   plan: OrganizationPlanSummary | null;
@@ -216,14 +218,63 @@ export async function checkSlugAvailability(
   }
 }
 
+/**
+ * Checks whether a mobile-app username is free. Pass `excludeId` when editing an existing
+ * organization so its own current username isn't reported as taken.
+ */
+export async function checkUsernameAvailability(
+  username: string,
+  excludeId?: string
+): Promise<ApiResponse<{ available: boolean }>> {
+  try {
+    const config: AxiosRequestConfig = {
+      method: 'get',
+      url: `${BASE_URL}/platform/organizations/check-username`,
+      params: { username, ...(excludeId ? { excludeId } : {}) },
+      headers: getPlatformAuthHeaders(),
+    };
+    const response = await axios(config);
+    return { success: true, data: response.data, status: response.status };
+  } catch (error) {
+    return {
+      success: false,
+      status: extractStatus(error),
+      message: extractErrorMessage(error, 'Failed to check username availability'),
+    };
+  }
+}
+
+export async function updateOrganizationUsername(
+  id: string,
+  username: string
+): Promise<ApiResponse<{ organization: { id: string; username: string } }>> {
+  try {
+    const config: AxiosRequestConfig = {
+      method: 'patch',
+      url: `${BASE_URL}/platform/organizations/${id}/username`,
+      data: { username },
+      headers: getPlatformAuthHeaders(),
+    };
+    const response = await axios(config);
+    return { success: true, data: response.data, status: response.status };
+  } catch (error) {
+    return {
+      success: false,
+      status: extractStatus(error),
+      message: extractErrorMessage(error, 'Failed to update username'),
+    };
+  }
+}
+
 export interface CreateOrganizationPayload {
   name: string;
   slug: string;
+  username: string;
   primaryContact: { name: string; email: string; phone: string };
 }
 
 export interface CreateOrganizationResult {
-  organization: { id: string; name: string; slug: string };
+  organization: { id: string; name: string; slug: string; username: string };
   adminCredentialsEmailed: boolean;
 }
 
@@ -301,6 +352,8 @@ export interface OrganizationDetail {
   name: string;
   legalName: string;
   slug: string;
+  /** Mobile-app institute identifier; null for institutes created before usernames existed. */
+  username: string | null;
   status: 'active' | 'suspended' | 'cancelled';
   subscriptionStatus: string;
   plan: PlanSummary | null;

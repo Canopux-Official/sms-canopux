@@ -48,6 +48,18 @@ const isValidSlugFormat = (slug: string): boolean =>
   /^[a-z0-9](?:[a-z0-9-]{1,30}[a-z0-9])?$/.test(slug);
 
 // ---------------------------------------------------------------------------
+// Username helpers (institute identifier for the mobile app, where there is no subdomain)
+// ---------------------------------------------------------------------------
+const normalizeUsername = (raw: string): string => String(raw).trim().toLowerCase();
+
+// 3-32 chars, lowercase letters/numbers/hyphens/underscores, must start and end with a letter or number.
+const isValidUsernameFormat = (username: string): boolean =>
+  /^[a-z0-9](?:[a-z0-9_-]{1,30}[a-z0-9])?$/.test(username);
+
+const USERNAME_FORMAT_MESSAGE =
+  'Username must be 3-32 characters: lowercase letters, numbers, hyphens and underscores only, and must start and end with a letter or number';
+
+// ---------------------------------------------------------------------------
 // Credentials email (best-effort — org creation still succeeds if this fails)
 // ---------------------------------------------------------------------------
 const transporter = nodemailer.createTransport({
@@ -70,6 +82,7 @@ const generateTempPassword = (): string => {
 const buildCredentialsEmailHtml = (
   orgName: string,
   slug: string,
+  username: string,
   phoneNumber: string,
   tempPassword: string
 ): string => {
@@ -88,6 +101,10 @@ const buildCredentialsEmailHtml = (
           <tr>
             <td style="padding: 8px 0; color: #777; font-size: 13px;">Login URL</td>
             <td style="padding: 8px 0; font-size: 14px;"><a href="${loginUrl}" style="color: #2E7D32;">${loginUrl}</a></td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #777; font-size: 13px;">Institute Username<br/><span style="font-size: 11px;">(for the mobile app)</span></td>
+            <td style="padding: 8px 0; font-size: 16px; font-family: 'Courier New', monospace; letter-spacing: 1px;">${username}</td>
           </tr>
           <tr>
             <td style="padding: 8px 0; color: #777; font-size: 13px;">Phone Number</td>
@@ -142,6 +159,42 @@ export const checkSlugAvailability = async (req: Request, res: Response) => {
 };
 
 // ---------------------------------------------------------------------------
+// GET /platform/organizations/check-username?username=xyz[&excludeId=<orgId>]
+// excludeId lets the edit dialog ignore the organization's own current username.
+// ---------------------------------------------------------------------------
+export const checkUsernameAvailability = async (req: Request, res: Response) => {
+  try {
+    const rawUsername = req.query.username;
+    const excludeId = req.query.excludeId;
+
+    if (!rawUsername || typeof rawUsername !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'username query parameter is required'
+      });
+    }
+
+    const username = normalizeUsername(rawUsername);
+
+    if (!isValidUsernameFormat(username)) {
+      return res.status(200).json({ success: true, available: false });
+    }
+
+    const filter: Record<string, any> = { username };
+    if (typeof excludeId === 'string' && mongoose.Types.ObjectId.isValid(excludeId)) {
+      filter._id = { $ne: excludeId };
+    }
+
+    const existing = await Organization.findOne(filter).select('_id');
+    return res.status(200).json({ success: true, available: !existing });
+
+  } catch (error) {
+    console.error('Error checking username availability:', error);
+    return res.status(500).json({ success: false, message: 'Server error checking username availability' });
+  }
+};
+
+// ---------------------------------------------------------------------------
 // GET /platform/organizations
 // ---------------------------------------------------------------------------
 export const getAllOrganizations = async (_req: Request, res: Response) => {
@@ -155,6 +208,7 @@ export const getAllOrganizations = async (_req: Request, res: Response) => {
       id: org._id,
       name: org.name,
       slug: org.slug,
+      username: org.username || null,
       status: normalizeStatus(org.status),
       subscriptionStatus: org.subscriptionStatus === 'trialing' ? 'active' : org.subscriptionStatus,
       plan: org.planId
@@ -195,18 +249,19 @@ export const createOrganization = async (req: Request, res: Response) => {
   let createdOrganization: any = null;
 
   try {
-    const { name, slug: rawSlug, primaryContact } = req.body;
+    const { name, slug: rawSlug, username: rawUsername, primaryContact } = req.body;
 
     if (
       !name ||
       !rawSlug ||
+      !rawUsername ||
       !primaryContact?.name ||
       !primaryContact?.email ||
       !primaryContact?.phone
     ) {
       return res.status(400).json({
         success: false,
-        message: 'name, slug and primaryContact (name, email, phone) are required'
+        message: 'name, slug, username and primaryContact (name, email, phone) are required'
       });
     }
 
@@ -228,6 +283,17 @@ export const createOrganization = async (req: Request, res: Response) => {
       return res.status(409).json({ success: false, message: 'Slug already taken' });
     }
 
+    const username = normalizeUsername(rawUsername);
+
+    if (!isValidUsernameFormat(username)) {
+      return res.status(400).json({ success: false, message: USERNAME_FORMAT_MESSAGE });
+    }
+
+    const existingUsername = await Organization.findOne({ username }).select('_id');
+    if (existingUsername) {
+      return res.status(409).json({ success: false, message: 'Username already taken' });
+    }
+
     const contactName = String(primaryContact.name).trim();
     const contactEmail = String(primaryContact.email).toLowerCase().trim();
     const contactPhone = String(primaryContact.phone).trim();
@@ -235,6 +301,7 @@ export const createOrganization = async (req: Request, res: Response) => {
     createdOrganization = await Organization.create({
       name: String(name).trim(),
       slug,
+      username,
       subdomain: slug,
       status: 'active',
       branding: {},
@@ -283,7 +350,7 @@ export const createOrganization = async (req: Request, res: Response) => {
         from: `"Canopux" <${process.env.MAIL_USER}>`,
         to: contactEmail,
         subject: `Your Canopux account for ${createdOrganization.name} is ready`,
-        html: buildCredentialsEmailHtml(createdOrganization.name, createdOrganization.slug, contactPhone, tempPassword)
+        html: buildCredentialsEmailHtml(createdOrganization.name, createdOrganization.slug, createdOrganization.username, contactPhone, tempPassword)
       });
       adminCredentialsEmailed = true;
     } catch (mailError) {
@@ -297,7 +364,8 @@ export const createOrganization = async (req: Request, res: Response) => {
       organization: {
         id: createdOrganization._id,
         name: createdOrganization.name,
-        slug: createdOrganization.slug
+        slug: createdOrganization.slug,
+        username: createdOrganization.username
       },
       adminCredentialsEmailed
     });
@@ -314,7 +382,9 @@ export const createOrganization = async (req: Request, res: Response) => {
     }
 
     if (error?.code === 11000) {
-      return res.status(409).json({ success: false, message: 'Slug already taken' });
+      const duplicatedField = Object.keys(error?.keyPattern || error?.keyValue || {})[0];
+      const message = duplicatedField === 'username' ? 'Username already taken' : 'Slug already taken';
+      return res.status(409).json({ success: false, message });
     }
 
     return res.status(500).json({ success: false, message: 'Server error creating organization' });
@@ -362,6 +432,59 @@ export const updateOrganizationStatus = async (req: Request, res: Response) => {
 };
 
 // ---------------------------------------------------------------------------
+// PATCH /platform/organizations/:id/username
+// Changes the institute's mobile-app username. The old username stops working immediately,
+// so the platform admin should let the institute know after changing it.
+// ---------------------------------------------------------------------------
+export const updateOrganizationUsername = async (req: Request, res: Response) => {
+  try {
+    const id = String(req.params.id);
+    const { username: rawUsername } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid organization id' });
+    }
+
+    if (!rawUsername || typeof rawUsername !== 'string') {
+      return res.status(400).json({ success: false, message: 'username is required' });
+    }
+
+    const username = normalizeUsername(rawUsername);
+
+    if (!isValidUsernameFormat(username)) {
+      return res.status(400).json({ success: false, message: USERNAME_FORMAT_MESSAGE });
+    }
+
+    const existing = await Organization.findOne({ username, _id: { $ne: id } }).select('_id');
+    if (existing) {
+      return res.status(409).json({ success: false, message: 'Username already taken' });
+    }
+
+    const organization = await Organization.findByIdAndUpdate(
+      id,
+      { $set: { username } },
+      { new: true }
+    ).select('_id username');
+
+    if (!organization) {
+      return res.status(404).json({ success: false, message: 'Organization not found' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      organization: { id: organization._id, username: organization.username }
+    });
+
+  } catch (error: any) {
+    console.error('Error updating organization username:', error);
+    if (error?.code === 11000) {
+      return res.status(409).json({ success: false, message: 'Username already taken' });
+    }
+    return res.status(500).json({ success: false, message: 'Server error updating organization username' });
+  }
+};
+
+// ---------------------------------------------------------------------------
 // GET /platform/organizations/:id
 // The "click into an institute" detail view: core org fields, its plan, billing
 // history and a monthly usage/invoice summary. Deliberately one call so the detail
@@ -393,6 +516,7 @@ export const getOrganizationDetail = async (req: Request, res: Response) => {
                 name: organization.name,
                 legalName: organization.legalName || '',
                 slug: organization.slug,
+                username: organization.username || null,
                 status: normalizeStatus(organization.status),
                 subscriptionStatus: organization.subscriptionStatus === 'trialing' ? 'active' : organization.subscriptionStatus,
                 plan: organization.planId ? serializePlan(organization.planId) : null,
@@ -535,9 +659,11 @@ export const impersonateOrganizationAdmin = async (req: PlatformAuthRequest, res
 
 export default {
   checkSlugAvailability,
+  checkUsernameAvailability,
   getAllOrganizations,
   createOrganization,
   updateOrganizationStatus,
+  updateOrganizationUsername,
   getOrganizationDetail,
   deleteOrganization,
   impersonateOrganizationAdmin,

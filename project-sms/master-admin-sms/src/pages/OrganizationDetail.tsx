@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Alert, Box, Button, CircularProgress, Divider, Paper, Stack, Typography,
+  Alert, Box, Button, CircularProgress, Divider, IconButton, Paper, Stack, Tooltip, Typography,
 } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LoginIcon from '@mui/icons-material/Login';
 import AddIcon from '@mui/icons-material/Add';
@@ -27,6 +28,7 @@ import SubscriptionTimelineBar from '../components/SubscriptionTimelineBar';
 import ConfirmDialog from '../components/ConfirmDialog';
 import DeleteOrganizationDialog from '../components/DeleteOrganizationDialog';
 import AssignPlanDialog from '../components/AssignPlanDialog';
+import EditUsernameDialog from '../components/EditUsernameDialog';
 
 const money = (n: number | undefined | null, currency = 'INR') => `${currency} ${(n ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -61,6 +63,7 @@ export default function OrganizationDetail() {
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
   const [assignPlanOpen, setAssignPlanOpen] = useState(false);
+  const [usernameDialogOpen, setUsernameDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -290,6 +293,19 @@ export default function OrganizationDetail() {
             <Typography variant="overline" color="text.secondary">Institute contact</Typography>
             <Stack spacing={1.25} sx={{ mt: 1 }}>
               <Stack spacing={0.1}>
+                <Typography variant="caption" color="text.secondary">Username (mobile app)</Typography>
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <Typography variant="body2" fontWeight={600} sx={{ fontFamily: organization.username ? "'Courier New', monospace" : undefined }}>
+                    {organization.username || 'Not set'}
+                  </Typography>
+                  <Tooltip title={organization.username ? 'Edit username' : 'Set username'}>
+                    <IconButton size="small" onClick={() => setUsernameDialogOpen(true)} aria-label="Edit username">
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              </Stack>
+              <Stack spacing={0.1}>
                 <Typography variant="caption" color="text.secondary">Superadmin</Typography>
                 <Typography fontWeight={600}>{organization.superAdmin?.name || '—'}</Typography>
               </Stack>
@@ -344,6 +360,15 @@ export default function OrganizationDetail() {
         error={deleteError}
         onConfirm={handleDelete}
         onCancel={() => setDeleteDialogOpen(false)}
+      />
+
+      <EditUsernameDialog
+        open={usernameDialogOpen}
+        organizationId={organization.id}
+        currentUsername={organization.username}
+        onClose={() => setUsernameDialogOpen(false)}
+        onSaved={() => { setUsernameDialogOpen(false); refresh(); }}
+        onSessionExpired={handleSessionExpired}
       />
 
       <AssignPlanDialog

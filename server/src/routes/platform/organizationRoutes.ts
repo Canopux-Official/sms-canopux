@@ -4,8 +4,10 @@ import verifyPlatformAuth from '../../middlewares/verifyPlatformAuth';
 import {
   getAllOrganizations,
   checkSlugAvailability,
+  checkUsernameAvailability,
   createOrganization,
   updateOrganizationStatus,
+  updateOrganizationUsername,
   getOrganizationDetail,
   deleteOrganization,
   impersonateOrganizationAdmin,
@@ -19,9 +21,11 @@ const router = express.Router();
 // Mounted at /platform/organizations in server.ts:
 //   GET   /platform/organizations
 //   GET   /platform/organizations/check-slug?slug=xyz
+//   GET   /platform/organizations/check-username?username=xyz[&excludeId=<orgId>]
 //   POST  /platform/organizations
 //   GET   /platform/organizations/:id                    full detail (plan, billing history, monthly summary)
 //   PATCH /platform/organizations/:id/status              suspend / reactivate
+//   PATCH /platform/organizations/:id/username            change the institute's mobile-app username
 //   POST  /platform/organizations/:id/subscription        assign/renew a plan (creates a draft invoice)
 //   GET   /platform/organizations/:id/invoices            invoice list for this org
 //   POST  /platform/organizations/:id/invoices            ad-hoc invoice, not tied to a plan purchase
@@ -29,9 +33,11 @@ const router = express.Router();
 //   POST  /platform/organizations/:id/login-as             issue an institute superadmin token (impersonation)
 router.get('/', verifyPlatformAuth, getAllOrganizations);
 router.get('/check-slug', verifyPlatformAuth, checkSlugAvailability);
+router.get('/check-username', verifyPlatformAuth, checkUsernameAvailability);
 router.post('/', verifyPlatformAuth, createOrganization);
 router.get('/:id', verifyPlatformAuth, getOrganizationDetail);
 router.patch('/:id/status', verifyPlatformAuth, updateOrganizationStatus);
+router.patch('/:id/username', verifyPlatformAuth, updateOrganizationUsername);
 router.post('/:id/subscription', verifyPlatformAuth, assignPlan);
 router.get('/:id/invoices', verifyPlatformAuth, listInvoicesForOrganization);
 router.post('/:id/invoices', verifyPlatformAuth, createManualInvoice);

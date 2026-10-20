@@ -1,7 +1,3 @@
-
-
-
-
 // server/src/models/Organization.ts
 import mongoose, { Schema, Document } from 'mongoose';
 
@@ -10,6 +6,7 @@ export interface IOrganization extends Document {
     name: string;
     legalName?: string;
     slug: string;
+    username?: string; // unique institute identifier used by the mobile app (no subdomain there)
     status: 'active' | 'suspended' | 'cancelled';
 
     // 2. Branding
@@ -84,6 +81,16 @@ const OrganizationSchema: Schema = new Schema({
         lowercase: true,
         trim: true,
         // Comment: Drives {slug}.sms.canopux.org. Checked against a reserved-words list at creation.
+    },
+    username: {
+        type: String,
+        unique: true,
+        sparse: true,
+        lowercase: true,
+        trim: true,
+        // Comment: Unique institute identifier for the mobile app, where there is no subdomain to
+        // resolve the tenant from. Sparse so institutes created before this field existed (no
+        // username yet) don't collide on null. Editable later by the platform admin.
     },
     status: {
         type: String,
